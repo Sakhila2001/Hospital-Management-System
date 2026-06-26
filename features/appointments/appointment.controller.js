@@ -1,0 +1,87 @@
+import {
+  createAppointmentService,
+  getAllAppointmentsService,
+  getAppointmentByIdService,
+  updateAppointmentStatusService,
+  deleteAppointmentService,
+} from "./appointment.service.js";
+
+export const createAppointment = async (req, res) => {
+  try {
+    const result = await createAppointmentService(req.body, req.user);
+    return res.status(201).json({
+      success: true,
+      message: "Appointment created successfully",
+      data: result,
+    });
+  } catch (error) {
+    const status =
+      error.message ===
+      "Only patients and receptionists can create appointments"
+        ? 403
+        : error.message === "Access denied"
+          ? 403
+          : 400;
+    return res.status(status).json({ success: false, message: error.message });
+  }
+};
+
+export const getAllAppointments = async (req, res) => {
+  try {
+    const result = await getAllAppointmentsService(req.user);
+    return res.status(200).json({ success: true, data: result });
+  } catch (error) {
+    return res.status(400).json({ success: false, message: error.message });
+  }
+};
+
+export const getAppointmentById = async (req, res) => {
+  try {
+    const result = await getAppointmentByIdService(
+      parseInt(req.params.id),
+      req.user,
+    );
+    return res.status(200).json({ success: true, data: result });
+  } catch (error) {
+    const status =
+      error.message === "Appointment not found"
+        ? 404
+        : error.message === "Access denied"
+          ? 403
+          : 400;
+    return res.status(status).json({ success: false, message: error.message });
+  }
+};
+
+export const updateAppointmentStatus = async (req, res) => {
+  try {
+    const result = await updateAppointmentStatusService(
+      parseInt(req.params.id),
+      req.body,
+      req.user,
+    );
+    return res.status(200).json({
+      success: true,
+      message: "Appointment updated successfully",
+      data: result,
+    });
+  } catch (error) {
+    const status =
+      error.message === "Appointment not found"
+        ? 404
+        : error.message === "Access denied"
+          ? 403
+          : 400;
+    return res.status(status).json({ success: false, message: error.message });
+  }
+};
+
+export const deleteAppointment = async (req, res) => {
+  try {
+    const result = await deleteAppointmentService(parseInt(req.params.id));
+    return res.status(200).json({ success: true, message: result.message });
+  } catch (error) {
+    const status = error.message === "Appointment not found" ? 404 : 400;
+    return res.status(status).json({ success: false, message: error.message });
+  }
+};

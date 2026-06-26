@@ -1,0 +1,363 @@
+import Appointment from "./appointment.model.js";
+import Doctor from "../doctors/doctor.model.js";
+import Patient from "../patients/patient.model.js";
+import Receptionist from "../receptionists/receptionist.model.js";
+import Department from "../departments/department.model.js";
+import User from "../users/user.model.js";
+import sequelize from "../../config/connection.js";
+import { Op } from "sequelize";
+
+const VALID_STATUSES = [
+  "pending",
+  "confirmed",
+  "completed",
+  "cancelled",
+  "no_show",
+];
+
+const TIME_REGEX = /^([01]\d|2[0-3]):([0-5]\d)$/; // HH:MM (24-hour)
+
+const validateAppointmentFields = ({
+  appointmentDate,
+  appointmentTime,
+  status,
+  cancelledReason,
+}) => {
+  if (appointmentDate && isNaN(Date.parse(appointmentDate))) {
+    throw new Error("Invalid appointmentDate format. Use YYYY-MM-DD");
+  }
+
+  if (appointmentDate) {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    if (new Date(appointmentDate) < today) {
+      throw new Error("Appointment date cannot be in the past");
+    }
+  }
+
+  if (appointmentTime && !TIME_REGEX.test(appointmentTime)) {
+    throw new Error("Invalid appointmentTime format. Use HH:MM (24-hour)");
+  }
+
+  if (status && !VALID_STATUSES.includes(status)) {
+    throw new Error(`Status must be one of: ${VALID_STATUSES.join(", ")}`);
+  }
+
+  if (status === "cancelled" && !cancelledReason?.trim()) {
+    throw new Error(
+      "cancelledReason is required when cancelling an appointment",
+    );
+  }
+};
+
+//  Create Appointment (patient self-book OR receptionist books for patient) ─
+
+export const createAppointmentService = async (data, requester) => {
+  const { roles, id: requesterId } = requester; // id = userId from JWT
+
+  const {
+    patientId, // required when receptionist books; ignored when patient books
+    doctorId,
+    departmentId,
+    appointmentDate,
+    appointmentTime,
+    appointmentReason,
+  } = data;
+
+  let resolvedPatientId;
+
+  if (roles === "patient") {
+    // patient can only book for themselves
+    const patientRecord = await Patient.findOne({
+      where: { userId: requesterId },
+    });
+    if (!patientRecord) {
+      throw new Error(
+        "Patient profile not found. Please complete your profile first",
+      );
+    }
+    resolvedPatientId = patientRecord.id;
+  } else if (roles === "receptionist") {
+    // receptionist must supply a patientId (userId of the patient)
+    if (!patientId) throw new Error("patientId is required");
+
+    // patientId here is the userId, not the patients table id
+    const patientRecord = await Patient.findOne({
+      where: { userId: patientId },
+    });
+    if (!patientRecord) throw new Error("Patient not found");
+
+    resolvedPatientId = patientRecord.id;
+  } else {
+    throw new Error("Only patients and receptionists can create appointments");
+  }
+
+  //  Required field check ─
+  if (!doctorId || !departmentId || !appointmentDate || !appointmentTime) {
+    throw new Error(
+      "doctorId, departmentId, appointmentDate, and appointmentTime are required",
+    );
+  }
+
+  //  Field validation ─
+  validateAppointmentFields({ appointmentDate, appointmentTime });
+
+  //  Doctor exists and is available
+  const doctor = await Doctor.findByPk(doctorId);
+  if (!doctor) throw new Error("Doctor not found");
+  if (!doctor.isAvailable)
+    throw new Error("Doctor is not available for appointments");
+
+  // Check doctor works on that day if availableDays is set
+  if (doctor.availableDays?.length) {
+    const dayName = new Date(appointmentDate).toLocaleDateString("en-US", {
+      weekday: "short",
+    });
+    if (!doctor.availableDays.includes(dayName)) {
+      throw new Error(`Doctor is not available on ${dayName}`);
+    }
+  }
+
+  // Check appointment time is within doctor's working hours
+  if (doctor.availableTimeStart && doctor.availableTimeEnd) {
+    if (
+      appointmentTime < doctor.availableTimeStart ||
+      appointmentTime > doctor.availableTimeEnd
+    ) {
+      throw new Error(
+        `Doctor is only available between ${doctor.availableTimeStart} and ${doctor.availableTimeEnd}`,
+      );
+    }
+  }
+
+  //  Doctor belongs to the given department
+  if (doctor.departmentId !== departmentId) {
+    throw new Error("Doctor does not belong to the specified department");
+  }
+
+  //  Department is active
+  const department = await Department.findOne({ where: { id: departmentId } });
+
+  if (!department) throw new Error("Department not found");
+  if (!department.isActive) throw new Error("Department is not active");
+
+  //  No double-booking for the same doctor at the same slot
+  const clash = await Appointment.findOne({
+    where: {
+      doctorId,
+      appointmentDate,
+      appointmentTime,
+      status: { [Op.in]: ["pending", "confirmed"] },
+    },
+  });
+  if (clash)
+    throw new Error("Doctor already has an appointment at this date and time");
+
+  //  Resolve receptionist id (createdBy)
+  let createdBy = null;
+  if (roles === "receptionist") {
+    const receptionistRecord = await Receptionist.findOne({
+      where: { userId: requesterId },
+    });
+    if (!receptionistRecord) throw new Error("Receptionist profile not found");
+    createdBy = receptionistRecord.id;
+  }
+
+  //  Create
+  const appointment = await sequelize.transaction(async (t) => {
+    return Appointment.create(
+      {
+        patientId: resolvedPatientId,
+        doctorId,
+        departmentId,
+        appointmentDate,
+        appointmentTime,
+        appointmentReason: appointmentReason || null,
+        createdBy,
+        status: "pending",
+      },
+      { transaction: t },
+    );
+  });
+
+  return { appointment };
+};
+
+//  Get all appointments (admin sees all; doctor/receptionist sees own; patient sees own) ─
+
+export const getAllAppointmentsService = async (requester) => {
+  const { roles, id: userId } = requester;
+
+  let whereClause = {};
+  let includeExtra = [];
+
+  if (roles === "patient") {
+    const patient = await Patient.findOne({ where: { userId } });
+    if (!patient) throw new Error("Patient profile not found");
+    whereClause.patientId = patient.id;
+  } else if (roles === "doctor") {
+    const doctor = await Doctor.findOne({ where: { userId } });
+    if (!doctor) throw new Error("Doctor profile not found");
+    whereClause.doctorId = doctor.id;
+  } else if (roles === "receptionist") {
+    const receptionist = await Receptionist.findOne({ where: { userId } });
+    if (!receptionist) throw new Error("Receptionist profile not found");
+    // show all appointments in their department, not just ones they created
+    whereClause.departmentId = receptionist.departmentId;
+  }
+  // admin: no whereClause filter — sees all
+
+  const appointments = await Appointment.findAll({
+    where: whereClause,
+    include: [
+      {
+        model: Patient,
+        include: [
+          { model: User, attributes: ["id", "firstName", "lastName", "email"] },
+        ],
+      },
+      {
+        model: Doctor,
+        include: [
+          { model: User, attributes: ["id", "firstName", "lastName", "email"] },
+        ],
+      },
+      { model: Department, attributes: ["id", "name"] },
+    ],
+    order: [
+      ["appointmentDate", "ASC"],
+      ["appointmentTime", "ASC"],
+    ],
+  });
+
+  return { appointments };
+};
+
+// Get single appointment
+
+export const getAppointmentByIdService = async (appointmentId, requester) => {
+  const { roles, id: userId } = requester;
+
+  const appointment = await Appointment.findByPk(appointmentId, {
+    include: [
+      {
+        model: Patient,
+        include: [
+          { model: User, attributes: ["id", "firstName", "lastName", "email"] },
+        ],
+      },
+      {
+        model: Doctor,
+        include: [
+          { model: User, attributes: ["id", "firstName", "lastName", "email"] },
+        ],
+      },
+      { model: Department, attributes: ["id", "name"] },
+    ],
+  });
+
+  if (!appointment) throw new Error("Appointment not found");
+
+  // Scope check — non-admin roles can only see their own appointments
+  if (roles === "patient") {
+    const patient = await Patient.findOne({ where: { userId } });
+    if (!patient || appointment.patientId !== patient.id) {
+      throw new Error("Access denied");
+    }
+  } else if (roles === "doctor") {
+    const doctor = await Doctor.findOne({ where: { userId } });
+    if (!doctor || appointment.doctorId !== doctor.id) {
+      throw new Error("Access denied");
+    }
+  } else if (roles === "receptionist") {
+    const receptionist = await Receptionist.findOne({ where: { userId } });
+    // check department match
+    if (
+      !receptionist ||
+      appointment.departmentId !== receptionist.departmentId
+    ) {
+      throw new Error("Access denied");
+    }
+  }
+
+  return { appointment };
+};
+
+//  Update appointment status
+// Rules:
+//   patient     → can only cancel their own pending appointment
+//   receptionist→ can confirm / cancel appointments they created
+//   doctor      → can mark confirmed → completed / no_show
+//   admin       → can do anything
+
+export const updateAppointmentStatusService = async (
+  appointmentId,
+  data,
+  requester,
+) => {
+  const { roles, id: userId } = requester;
+  const { status, cancelledReason } = data;
+
+  if (!status) throw new Error("status is required");
+  validateAppointmentFields({ status, cancelledReason });
+
+  const appointment = await Appointment.findByPk(appointmentId);
+  if (!appointment) throw new Error("Appointment not found");
+
+  //  Role-based permission matrix
+  if (roles === "patient") {
+    const patient = await Patient.findOne({ where: { userId } });
+    if (!patient || appointment.patientId !== patient.id) {
+      throw new Error("Access denied");
+    }
+    if (status !== "cancelled") {
+      throw new Error("Patients can only cancel their appointments");
+    }
+    if (appointment.status !== "pending") {
+      throw new Error("Only pending appointments can be cancelled");
+    }
+  } else if (roles === "receptionist") {
+    const receptionist = await Receptionist.findOne({ where: { userId } });
+    if (!receptionist) throw new Error("Receptionist profile not found");
+    //  check department match instead of createdBy
+    if (appointment.departmentId !== receptionist.departmentId) {
+      throw new Error("Access denied");
+    }
+    if (!["confirmed", "cancelled"].includes(status)) {
+      throw new Error("Receptionists can only confirm or cancel appointments");
+    }
+  } else if (roles === "doctor") {
+    const doctor = await Doctor.findOne({ where: { userId } });
+    if (!doctor || appointment.doctorId !== doctor.id) {
+      throw new Error("Access denied");
+    }
+    if (!["completed", "no_show"].includes(status)) {
+      throw new Error(
+        "Doctors can only mark appointments as completed or no_show",
+      );
+    }
+    if (appointment.status !== "confirmed") {
+      throw new Error("Only confirmed appointments can be updated by a doctor");
+    }
+  }
+  // admin: no restriction
+
+  const updateData = { status };
+  if (status === "cancelled") {
+    updateData.cancelledReason = cancelledReason;
+    updateData.cancelledAt = new Date();
+  }
+
+  await appointment.update(updateData);
+
+  return { appointment };
+};
+
+export const deleteAppointmentService = async (appointmentId) => {
+  const appointment = await Appointment.findByPk(appointmentId);
+  if (!appointment) throw new Error("Appointment not found");
+
+  await appointment.destroy();
+
+  return { message: "Appointment deleted successfully" };
+};
