@@ -19,7 +19,7 @@ const Appointment = sequelize.define(
     },
     departmentId: {
       type: DataTypes.INTEGER,
-      allowNull: false,
+      allowNull: true,
       references: {
         model: "departments",
         key: "id",
@@ -27,11 +27,16 @@ const Appointment = sequelize.define(
     },
     doctorId: {
       type: DataTypes.INTEGER,
-      allowNull: false,
+      allowNull: true,
       references: {
         model: "doctors",
         key: "id",
       },
+    },
+    type: {
+      type: DataTypes.ENUM("new_patient", "follow_up", "consultation", "emergency"),
+      allowNull: false,
+      defaultValue: "consultation",
     },
     createdBy: {
       type: DataTypes.INTEGER, // receptionist id, nullable if self-booked

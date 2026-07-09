@@ -165,22 +165,28 @@ export const AdminProvider = ({ children }) => {
       id: 1,
       patientId: 301,
       doctorId: 101,
+      departmentId: 1,
       patientName: "Robert Paulson",
       doctorName: "Dr. John Doe",
       departmentName: "Cardiology",
       date: "2026-07-10",
       time: "10:30",
+      type: "consultation",
+      appointmentReason: "Routine heart checkup",
       status: "pending"
     },
     {
       id: 2,
       patientId: 302,
       doctorId: 102,
+      departmentId: 2,
       patientName: "Emily Watson",
       doctorName: "Dr. Sarah Connor",
       departmentName: "Pediatrics",
       date: "2026-07-11",
       time: "14:00",
+      type: "new_patient",
+      appointmentReason: "Child fever recovery",
       status: "confirmed"
     }
   ]);
@@ -188,9 +194,30 @@ export const AdminProvider = ({ children }) => {
   // --- OPERATIONS ---
 
   // APPOINTMENTS
-  const updateAppointmentStatus = (id, status) => {
+  const updateAppointmentStatus = (id, status, extraData = {}) => {
     setAppointments((prev) =>
-      prev.map((app) => (app.id === id ? { ...app, status } : app))
+      prev.map((app) => {
+        if (app.id === id) {
+          let doctorName = app.doctorName;
+          let departmentName = app.departmentName;
+          if (extraData.doctorId) {
+            const doc = doctors.find((d) => d.id === Number(extraData.doctorId) || d.userId === Number(extraData.doctorId));
+            doctorName = doc ? `Dr. ${doc.firstName} ${doc.lastName}` : doctorName;
+          }
+          if (extraData.departmentId) {
+            const dept = departments.find((d) => d.id === Number(extraData.departmentId));
+            departmentName = dept ? dept.name : departmentName;
+          }
+          return {
+            ...app,
+            status,
+            ...extraData,
+            doctorName,
+            departmentName
+          };
+        }
+        return app;
+      })
     );
     addNotification(`Appointment ID #${id} status updated to "${status.toUpperCase()}".`);
   };
@@ -286,6 +313,19 @@ export const AdminProvider = ({ children }) => {
     addNotification(`Doctor profile details for Dr. ${updatedFields.firstName || userId} updated.`);
   };
 
+  const toggleDoctorAvailability = (doctorId) => {
+    setDoctors((prev) =>
+      prev.map((doc) => {
+        if (doc.id === doctorId || doc.userId === doctorId) {
+          const nextVal = !doc.isAvailable;
+          addNotification(`Dr. ${doc.firstName} ${doc.lastName} availability toggled to ${nextVal ? "Available" : "Off-duty"}.`);
+          return { ...doc, isAvailable: nextVal };
+        }
+        return doc;
+      })
+    );
+  };
+
   const deleteDoctor = (userId) => {
     const doc = doctors.find((d) => d.userId === userId);
     setDoctors((prev) => prev.filter((doc) => doc.userId !== userId));
@@ -371,13 +411,6 @@ export const AdminProvider = ({ children }) => {
   const bookAppointment = (data) => {
     const newId = appointments.length ? Math.max(...appointments.map((a) => a.id)) + 1 : 1;
     const newPatientId = patients.length ? Math.max(...patients.map((p) => p.userId)) + 1 : 301;
-    
-    const doctorObj = doctors.find(d => d.userId === Number(data.doctorId));
-    const doctorName = doctorObj ? `Dr. ${doctorObj.firstName} ${doctorObj.lastName}` : "General Doctor";
-    
-    const deptId = doctorObj ? doctorObj.departmentId : (data.departmentId ? Number(data.departmentId) : 1);
-    const deptObj = departments.find(d => d.id === deptId);
-    const deptName = deptObj ? deptObj.name : "General Care";
 
     const newPatientObj = {
       id: newPatientId - 300,
@@ -399,17 +432,20 @@ export const AdminProvider = ({ children }) => {
     const newApp = {
       id: newId,
       patientId: newPatientId,
-      doctorId: Number(data.doctorId),
+      doctorId: null,
+      departmentId: null,
       patientName: `${data.patientFirstName} ${data.patientLastName}`,
-      doctorName: doctorName,
-      departmentName: deptName,
+      doctorName: "Not Assigned",
+      departmentName: "Not Assigned",
       date: data.date,
       time: data.time,
+      type: data.type || "consultation",
+      appointmentReason: data.appointmentReason || "",
       status: "pending"
     };
 
     setAppointments((prev) => [...prev, newApp]);
-    addNotification(`New appointment booked by patient "${data.patientFirstName} ${data.patientLastName}" (Awaiting confirm).`);
+    addNotification(`New triage appointment request submitted by patient "${data.patientFirstName} ${data.patientLastName}".`);
     return newApp;
   };
 
@@ -430,6 +466,7 @@ export const AdminProvider = ({ children }) => {
         deleteDepartment,
         createDoctor,
         updateDoctor,
+        toggleDoctorAvailability,
         deleteDoctor,
         createReceptionist,
         updateReceptionist,

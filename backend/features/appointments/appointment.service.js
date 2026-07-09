@@ -93,65 +93,73 @@ export const createAppointmentService = async (data, requester) => {
   }
 
   //  Required field check ─
-  if (!doctorId || !departmentId || !appointmentDate || !appointmentTime) {
+  if (!departmentId || !appointmentDate || !appointmentTime) {
     throw new Error(
-      "doctorId, departmentId, appointmentDate, and appointmentTime are required",
+      "departmentId, appointmentDate, and appointmentTime are required",
+    );
+  }
+
+  // Prevent patients from self-assigning doctors
+  if (roles === "patient" && doctorId) {
+    throw new Error(
+      "Patients cannot assign doctors. Doctors must be assigned by a receptionist.",
     );
   }
 
   //  Field validation ─
   validateAppointmentFields({ appointmentDate, appointmentTime });
 
-  //  Doctor exists and is available
-  const doctor = await Doctor.findByPk(doctorId);
-  if (!doctor) throw new Error("Doctor not found");
-  if (!doctor.isAvailable)
-    throw new Error("Doctor is not available for appointments");
-
-  // Check doctor works on that day if availableDays is set
-  if (doctor.availableDays?.length) {
-    const dayName = new Date(appointmentDate).toLocaleDateString("en-US", {
-      weekday: "short",
-    });
-    if (!doctor.availableDays.includes(dayName)) {
-      throw new Error(`Doctor is not available on ${dayName}`);
-    }
-  }
-
-  // Check appointment time is within doctor's working hours
-  if (doctor.availableTimeStart && doctor.availableTimeEnd) {
-    if (
-      appointmentTime < doctor.availableTimeStart ||
-      appointmentTime > doctor.availableTimeEnd
-    ) {
-      throw new Error(
-        `Doctor is only available between ${doctor.availableTimeStart} and ${doctor.availableTimeEnd}`,
-      );
-    }
-  }
-
-  //  Doctor belongs to the given department
-  if (doctor.departmentId !== departmentId) {
-    throw new Error("Doctor does not belong to the specified department");
-  }
-
   //  Department is active
   const department = await Department.findOne({ where: { id: departmentId } });
-
   if (!department) throw new Error("Department not found");
   if (!department.isActive) throw new Error("Department is not active");
 
-  //  No double-booking for the same doctor at the same slot
-  const clash = await Appointment.findOne({
-    where: {
-      doctorId,
-      appointmentDate,
-      appointmentTime,
-      status: { [Op.in]: ["pending", "confirmed"] },
-    },
-  });
-  if (clash)
-    throw new Error("Doctor already has an appointment at this date and time");
+  if (doctorId) {
+    //  Doctor exists and is available
+    const doctor = await Doctor.findByPk(doctorId);
+    if (!doctor) throw new Error("Doctor not found");
+    if (!doctor.isAvailable)
+      throw new Error("Doctor is not available for appointments");
+
+    // Check doctor works on that day if availableDays is set
+    if (doctor.availableDays?.length) {
+      const dayName = new Date(appointmentDate).toLocaleDateString("en-US", {
+        weekday: "short",
+      });
+      if (!doctor.availableDays.includes(dayName)) {
+        throw new Error(`Doctor is not available on ${dayName}`);
+      }
+    }
+
+    // Check appointment time is within doctor's working hours
+    if (doctor.availableTimeStart && doctor.availableTimeEnd) {
+      if (
+        appointmentTime < doctor.availableTimeStart ||
+        appointmentTime > doctor.availableTimeEnd
+      ) {
+        throw new Error(
+          `Doctor is only available between ${doctor.availableTimeStart} and ${doctor.availableTimeEnd}`,
+        );
+      }
+    }
+
+    //  Doctor belongs to the given department
+    if (doctor.departmentId !== departmentId) {
+      throw new Error("Doctor does not belong to the specified department");
+    }
+
+    //  No double-booking for the same doctor at the same slot
+    const clash = await Appointment.findOne({
+      where: {
+        doctorId,
+        appointmentDate,
+        appointmentTime,
+        status: { [Op.in]: ["pending", "confirmed"] },
+      },
+    });
+    if (clash)
+      throw new Error("Doctor already has an appointment at this date and time");
+  }
 
   //  Resolve receptionist id (createdBy)
   let createdBy = null;
@@ -296,7 +304,7 @@ export const updateAppointmentStatusService = async (
   requester,
 ) => {
   const { roles, id: userId } = requester;
-  const { status, cancelledReason } = data;
+  const { status, cancelledReason, doctorId } = data;
 
   if (!status) throw new Error("status is required");
   validateAppointmentFields({ status, cancelledReason });
@@ -346,6 +354,66 @@ export const updateAppointmentStatusService = async (
   if (status === "cancelled") {
     updateData.cancelledReason = cancelledReason;
     updateData.cancelledAt = new Date();
+  }
+
+  // Enforce receptionist doctor assignment check
+  if (status === "confirmed") {
+    const activeDoctorId = doctorId || appointment.doctorId;
+    if (!activeDoctorId) {
+      throw new Error("A doctor must be assigned to confirm this appointment");
+    }
+  }
+
+  if (doctorId) {
+    if (roles === "patient") {
+      throw new Error("Patients cannot assign doctors. Doctors must be assigned by a receptionist.");
+    }
+    const doctor = await Doctor.findByPk(doctorId);
+    if (!doctor) throw new Error("Doctor not found");
+    if (!doctor.isAvailable)
+      throw new Error("Doctor is not available for appointments");
+
+    // Check doctor works on that day if availableDays is set
+    if (doctor.availableDays?.length) {
+      const dayName = new Date(appointment.appointmentDate).toLocaleDateString("en-US", {
+        weekday: "short",
+      });
+      if (!doctor.availableDays.includes(dayName)) {
+        throw new Error(`Doctor is not available on ${dayName}`);
+      }
+    }
+
+    // Check appointment time is within doctor's working hours
+    if (doctor.availableTimeStart && doctor.availableTimeEnd) {
+      if (
+        appointment.appointmentTime < doctor.availableTimeStart ||
+        appointment.appointmentTime > doctor.availableTimeEnd
+      ) {
+        throw new Error(
+          `Doctor is only available between ${doctor.availableTimeStart} and ${doctor.availableTimeEnd}`,
+        );
+      }
+    }
+
+    // Doctor belongs to the given department
+    if (doctor.departmentId !== appointment.departmentId) {
+      throw new Error("Doctor does not belong to the specified department");
+    }
+
+    // No double-booking for the same doctor at the same slot
+    const clash = await Appointment.findOne({
+      where: {
+        doctorId,
+        appointmentDate: appointment.appointmentDate,
+        appointmentTime: appointment.appointmentTime,
+        status: { [Op.in]: ["pending", "confirmed"] },
+        id: { [Op.ne]: appointment.id } // exclude self
+      },
+    });
+    if (clash)
+      throw new Error("Doctor already has an appointment at this date and time");
+
+    updateData.doctorId = doctorId;
   }
 
   await appointment.update(updateData);

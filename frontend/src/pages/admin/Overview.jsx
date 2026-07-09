@@ -1,6 +1,6 @@
 import React from "react";
 import { useAdmin } from "../../context/AdminContext";
-import StatCard from "../../components/StatCard";
+import Card from "../../components/common/Card";
 import {
   CalendarIcon,
   BuildingOfficeIcon,
@@ -28,37 +28,37 @@ export default function Overview({ onOpenCreateModal, setActiveTab, triggerToast
   return (
     <div className="space-y-6">
       
-      {/* Metrics Row using reusable StatCard */}
+      {/* Metrics Row using reusable Card */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-5">
-        <StatCard
+        <Card
           title="Total Appointments"
           value={appointments.length}
           subtitle={`(${pendingAppointmentsCount} pending)`}
           icon={CalendarIcon}
           onClick={() => setActiveTab("appointments")}
         />
-        <StatCard
+        <Card
           title="Active Departments"
           value={activeDeptsCount}
           subtitle={`/ ${departments.length} total`}
           icon={BuildingOfficeIcon}
           onClick={() => setActiveTab("departments")}
         />
-        <StatCard
+        <Card
           title="Available Doctors"
           value={availableDocsCount}
           subtitle={`/ ${doctors.length} registered`}
           icon={UserIcon}
           onClick={() => setActiveTab("doctors")}
         />
-        <StatCard
+        <Card
           title="Active Receptionists"
           value={receptionists.length}
           subtitle="Shift managers"
           icon={UserGroupIcon}
           onClick={() => setActiveTab("receptionists")}
         />
-        <StatCard
+        <Card
           title="Patients Registered"
           value={patients.length}
           subtitle="Record files"

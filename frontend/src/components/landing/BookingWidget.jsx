@@ -1,14 +1,10 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { useAdmin } from "../../context/AdminContext";
 
 export default function BookingWidget({ triggerToast }) {
-  const { departments, doctors, bookAppointment } = useAdmin();
+  const { bookAppointment } = useAdmin();
 
-  // Selected states
-  const [selectedDeptId, setSelectedDeptId] = useState("");
-  const [selectedDocId, setSelectedDocId] = useState("");
-  
-  // Patient details
+  // Patient details + appointment info
   const [formData, setFormData] = useState({
     patientFirstName: "",
     patientLastName: "",
@@ -17,35 +13,10 @@ export default function BookingWidget({ triggerToast }) {
     patientGender: "male",
     patientDOB: "",
     date: "",
-    time: "09:00"
+    time: "09:00",
+    type: "consultation",
+    reason: ""
   });
-
-  // Filtered doctors list based on department selection
-  const [availableDocs, setAvailableDocs] = useState([]);
-
-  // Load active departments initially
-  const activeDepts = departments.filter((d) => d.isActive);
-
-  useEffect(() => {
-    if (activeDepts.length > 0 && !selectedDeptId) {
-      setSelectedDeptId(activeDepts[0].id.toString());
-    }
-  }, [activeDepts]);
-
-  // Update available doctors when department selection changes
-  useEffect(() => {
-    if (selectedDeptId) {
-      const filtered = doctors.filter(
-        (doc) => Number(doc.departmentId) === Number(selectedDeptId) && doc.isAvailable
-      );
-      setAvailableDocs(filtered);
-      if (filtered.length > 0) {
-        setSelectedDocId(filtered[0].userId.toString());
-      } else {
-        setSelectedDocId("");
-      }
-    }
-  }, [selectedDeptId, doctors]);
 
   const handleChange = (e) => {
     setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
@@ -54,21 +25,16 @@ export default function BookingWidget({ triggerToast }) {
   const handleBookingSubmit = (e) => {
     e.preventDefault();
     try {
-      if (!selectedDocId) {
-        throw new Error("Please select a doctor for your appointment.");
-      }
       if (!formData.date) {
         throw new Error("Please pick a scheduled date.");
       }
 
       const bookedObj = bookAppointment({
-        ...formData,
-        doctorId: Number(selectedDocId),
-        departmentId: Number(selectedDeptId)
+        ...formData
       });
 
       triggerToast(`Appointment booked successfully! Status: ${bookedObj.status.toUpperCase()}`);
-      
+
       // Reset form
       setFormData({
         patientFirstName: "",
@@ -78,7 +44,9 @@ export default function BookingWidget({ triggerToast }) {
         patientGender: "male",
         patientDOB: "",
         date: "",
-        time: "09:00"
+        time: "09:00",
+        type: "consultation",
+        reason: ""
       });
     } catch (err) {
       triggerToast(err.message, "error");
@@ -88,7 +56,7 @@ export default function BookingWidget({ triggerToast }) {
   return (
     <section id="booking" className="py-20 bg-gray-50">
       <div className="max-w-4xl mx-auto px-6 lg:px-8 space-y-8">
-        
+
         <div className="text-center space-y-3">
           <span className="text-xs font-bold text-teal-600 uppercase tracking-widest">Appointment Desk</span>
           <h2 className="text-3xl font-bold tracking-tight text-gray-900">
@@ -99,7 +67,7 @@ export default function BookingWidget({ triggerToast }) {
           </p>
         </div>
 
-        <form 
+        <form
           onSubmit={handleBookingSubmit}
           className="bg-white border border-gray-200 rounded-2xl shadow-xl p-6 sm:p-8 space-y-6"
         >
@@ -172,41 +140,36 @@ export default function BookingWidget({ triggerToast }) {
             </div>
           </div>
 
-          {/* Department and Doctor Selection */}
+          {/* Appointment Type & Reason */}
           <div className="space-y-4">
-            <h3 className="text-sm font-bold text-gray-700 uppercase border-b border-gray-100 pb-1.5">2. Department & Doctor</h3>
+            <h3 className="text-sm font-bold text-gray-700 uppercase border-b border-gray-100 pb-1.5">2. Appointment Details</h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-bold text-gray-500 uppercase">Clinical Department</label>
+                <label className="block text-xs font-bold text-gray-500 uppercase">Appointment Type</label>
                 <select
-                  value={selectedDeptId}
-                  onChange={(e) => setSelectedDeptId(e.target.value)}
+                  name="type"
+                  value={formData.type}
+                  onChange={handleChange}
                   className="mt-1 w-full bg-gray-50 border border-gray-300 rounded-lg p-2.5 text-sm focus:ring-teal-500 focus:bg-white outline-none font-medium"
                 >
-                  {activeDepts.map((d) => (
-                    <option key={d.id} value={d.id}>{d.name}</option>
-                  ))}
+                  <option value="new_patient">New Patient</option>
+                  <option value="follow_up">Follow Up</option>
+                  <option value="consultation">Consultation</option>
+                  <option value="emergency">Emergency</option>
                 </select>
               </div>
+            </div>
 
-              <div>
-                <label className="block text-xs font-bold text-gray-500 uppercase">Available Doctor</label>
-                <select
-                  value={selectedDocId}
-                  onChange={(e) => setSelectedDocId(e.target.value)}
-                  disabled={availableDocs.length === 0}
-                  className="mt-1 w-full bg-gray-50 border border-gray-300 rounded-lg p-2.5 text-sm focus:ring-teal-500 focus:bg-white outline-none font-medium disabled:opacity-50"
-                >
-                  {availableDocs.map((doc) => (
-                    <option key={doc.userId} value={doc.userId}>
-                      Dr. {doc.firstName} {doc.lastName} ({doc.specialization})
-                    </option>
-                  ))}
-                  {availableDocs.length === 0 && (
-                    <option value="">No specialists available in this department</option>
-                  )}
-                </select>
-              </div>
+            <div>
+              <label className="block text-xs font-bold text-gray-500 uppercase">Reason for Visit</label>
+              <textarea
+                name="reason"
+                value={formData.reason}
+                onChange={handleChange}
+                rows={3}
+                className="mt-1 w-full bg-gray-50 border border-gray-300 rounded-lg p-2.5 text-sm focus:ring-teal-500 focus:bg-white outline-none resize-none"
+                placeholder="Briefly describe the reason for this appointment (optional)"
+              />
             </div>
           </div>
 

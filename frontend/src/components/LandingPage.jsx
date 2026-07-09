@@ -17,7 +17,7 @@ import FaqSection from "./landing/FaqSection";
 import Footer from "./landing/Footer";
 
 // Reusable Notification Component
-import Toast from "./Toast";
+import Toast from "./common/Toast";
 
 const navigation = [
   { name: "Services", href: "#services" },

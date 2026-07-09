@@ -4,8 +4,8 @@ import Logo from "../../assets/images/logo.png";
 import { useNavigate } from "react-router-dom";
 
 // Reusable Components
-import Modal from "../../components/Modal";
-import Toast from "../../components/Toast";
+import Modal from "../../components/common/Modal";
+import Toast from "../../components/common/Toast";
 
 // Sub-Views
 import Overview from "./Overview";
