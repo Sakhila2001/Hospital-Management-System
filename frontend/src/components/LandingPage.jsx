@@ -1,37 +1,100 @@
-import React from "react";
-import { useState } from "react";
+import React, { useState } from "react";
 import { Dialog, DialogPanel } from "@headlessui/react";
 import { Bars3Icon, XMarkIcon } from "@heroicons/react/24/outline";
 import { Link } from "react-router-dom";
 import Logo from "../assets/images/logo.png";
+
+// Modular Landing Sections
+import HeroSection from "./landing/HeroSection";
+import StatsSection from "./landing/StatsSection";
+import ServicesSection from "./landing/ServicesSection";
+import DepartmentsSection from "./landing/DepartmentsSection";
+import AboutSection from "./landing/AboutSection";
+import ContactSection from "./landing/ContactSection";
+import DoctorsSection from "./landing/DoctorsSection";
+import TestimonialsSection from "./landing/TestimonialsSection";
+import FaqSection from "./landing/FaqSection";
+import Footer from "./landing/Footer";
+
+// Reusable Notification Component
+import Toast from "./Toast";
+
 const navigation = [
-  { name: "Departments", href: "#" },
-  { name: "Doctors", href: "#" },
-  { name: "Services", href: "#" },
-  { name: "Patient Care", href: "#" },
-  { name: "Contact", href: "#" },
+  { name: "Services", href: "#services" },
+  { name: "Departments", href: "#departments" },
+  { name: "About Us", href: "#about" },
+  { name: "Contact Desk", href: "#contact" },
 ];
 
-const LandingPage = () => {
+export default function LandingPage() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [toast, setToast] = useState({ show: false, message: "", type: "success" });
+
+  const triggerToast = (message, type = "success") => {
+    setToast({ show: true, message, type });
+  };
+
+  const scrollToSection = (id) => {
+    setMobileMenuOpen(false);
+    const element = document.querySelector(id);
+    if (element) {
+      element.scrollIntoView({ behavior: "smooth" });
+    }
+  };
 
   return (
-    <div className="bg-white">
-      <header className="absolute inset-x-0 top-0 z-50">
-        <nav
-          aria-label="Global"
-          className="flex items-center justify-between p-6 lg:px-8"
-        >
+    <div className="bg-white min-h-screen font-sans">
+      
+      {/* Toast Relayer */}
+      <Toast
+        message={toast.message}
+        type={toast.type}
+        show={toast.show}
+        onClose={() => setToast({ show: false, message: "", type: "success" })}
+      />
+
+      {/* Main Header / Navigation */}
+      <header className="fixed inset-x-0 top-0 z-30 bg-white/90 backdrop-blur-md border-b border-gray-150">
+        <nav aria-label="Global" className="flex items-center justify-between p-4 lg:px-8 max-w-7xl mx-auto">
+          
+          {/* Logo brand */}
           <div className="flex lg:flex-1">
-            <a href="#" className="-m-1.5 p-1.5">
-              <span className="sr-only">City Care Hospital</span>
-              <img
-                src={Logo}
-                alt="City Care Hospital Logo"
-                className="h-12 w-auto"
-              />
+            <a href="#" className="-m-1.5 p-1.5 flex items-center gap-2.5">
+              <img src={Logo} alt="City Care Logo" className="h-10 w-auto" />
+              <div>
+                <h1 className="text-gray-900 text-sm font-extrabold tracking-wide uppercase">City Care</h1>
+                <p className="text-[10px] text-teal-600 font-bold -mt-1 leading-none uppercase">Hospital Center</p>
+              </div>
             </a>
           </div>
+
+          {/* Desktop Nav Items */}
+          <div className="hidden lg:flex lg:gap-x-8">
+            {navigation.map((item) => (
+              <button
+                key={item.name}
+                onClick={() => scrollToSection(item.href)}
+                className="text-sm font-semibold text-gray-700 hover:text-teal-600 transition-colors cursor-pointer"
+              >
+                {item.name}
+              </button>
+            ))}
+          </div>
+
+          {/* Action Buttons */}
+          <div className="hidden lg:flex lg:flex-1 lg:justify-end lg:items-center lg:gap-x-4">
+            <Link to="/login" className="text-sm font-semibold text-gray-955 hover:text-teal-600 transition-colors mr-2">
+              Login Portal
+            </Link>
+            <Link
+              to="/login"
+              className="rounded-full bg-teal-600 px-4.5 py-2 text-sm font-semibold text-white shadow-sm hover:bg-teal-500 transition-all cursor-pointer text-center"
+            >
+              Book Consultation
+            </Link>
+          </div>
+
+          {/* Mobile menu trigger */}
           <div className="flex lg:hidden">
             <button
               type="button"
@@ -39,47 +102,20 @@ const LandingPage = () => {
               className="-m-2.5 inline-flex items-center justify-center rounded-md p-2.5 text-gray-700"
             >
               <span className="sr-only">Open main menu</span>
-              <Bars3Icon aria-hidden="true" className="size-6" />
+              <Bars3Icon aria-hidden="true" className="h-6 w-6" />
             </button>
           </div>
-          <div className="hidden lg:flex lg:gap-x-12">
-            {navigation.map((item) => (
-              <a
-                key={item.name}
-                href={item.href}
-                className="text-sm/6 font-semibold text-gray-900"
-              >
-                {item.name}
-              </a>
-            ))}
-          </div>
-          <div className="hidden lg:flex lg:flex-1 lg:justify-end lg:items-center lg:gap-x-4">
-            <Link to="/login" className="text-sm/6 font-semibold text-gray-900">
-              Login
-            </Link>
-            <Link
-              to="/register"
-              className="rounded-md bg-teal-600 px-3.5 py-2 text-sm font-semibold text-white shadow-xs hover:bg-teal-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
-            >
-              Book Appointment
-            </Link>
-          </div>
+
         </nav>
-        <Dialog
-          open={mobileMenuOpen}
-          onClose={setMobileMenuOpen}
-          className="lg:hidden"
-        >
-          <div className="fixed inset-0 z-50" />
+
+        {/* Mobile Navigation Drawer */}
+        <Dialog open={mobileMenuOpen} onClose={setMobileMenuOpen} className="lg:hidden">
+          <div className="fixed inset-0 z-50 bg-black/30 backdrop-blur-xs" />
           <DialogPanel className="fixed inset-y-0 right-0 z-50 w-full overflow-y-auto bg-white p-6 sm:max-w-sm sm:ring-1 sm:ring-gray-900/10">
             <div className="flex items-center justify-between">
-              <a href="#" className="-m-1.5 p-1.5">
-                <span className="sr-only">City Care Hospital</span>
-                <img
-                  src={Logo}
-                  alt="City Care Hospital Logo"
-                  className="h-12 w-auto"
-                />
+              <a href="#" className="-m-1.5 p-1.5 flex items-center gap-2">
+                <img src={Logo} alt="City Care Logo" className="h-10 w-auto" />
+                <span className="text-sm font-extrabold text-gray-955 tracking-wide uppercase">City Care</span>
               </a>
               <button
                 type="button"
@@ -87,34 +123,37 @@ const LandingPage = () => {
                 className="-m-2.5 rounded-md p-2.5 text-gray-700"
               >
                 <span className="sr-only">Close menu</span>
-                <XMarkIcon aria-hidden="true" className="size-6" />
+                <XMarkIcon aria-hidden="true" className="h-6 w-6" />
               </button>
             </div>
+            
             <div className="mt-6 flow-root">
               <div className="-my-6 divide-y divide-gray-500/10">
                 <div className="space-y-2 py-6">
                   {navigation.map((item) => (
-                    <a
+                    <button
                       key={item.name}
-                      href={item.href}
-                      className="-mx-3 block rounded-lg px-3 py-2 text-base/7 font-semibold text-gray-900 hover:bg-gray-50"
+                      onClick={() => scrollToSection(item.href)}
+                      className="-mx-3 block w-full text-left rounded-lg px-3 py-2 text-base font-semibold text-gray-900 hover:bg-gray-50 cursor-pointer"
                     >
                       {item.name}
-                    </a>
+                    </button>
                   ))}
                 </div>
                 <div className="py-6 space-y-2">
                   <Link
                     to="/login"
-                    className="-mx-3 block rounded-lg px-3 py-2.5 text-base/7 font-semibold text-gray-900 hover:bg-gray-50"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="-mx-3 block rounded-lg px-3 py-2.5 text-base font-semibold text-gray-900 hover:bg-gray-50"
                   >
-                    Login
+                    Login Portal
                   </Link>
                   <Link
-                    to="/register"
-                    className="-mx-3 block rounded-lg bg-teal-600 px-3 py-2.5 text-base/7 font-semibold text-white text-center hover:bg-teal-500"
+                    to="/login"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="-mx-3 block w-full text-center rounded-lg bg-teal-600 px-3 py-2.5 text-base font-semibold text-white hover:bg-teal-500 cursor-pointer"
                   >
-                    Book Appointment
+                    Book Consultation
                   </Link>
                 </div>
               </div>
@@ -123,55 +162,30 @@ const LandingPage = () => {
         </Dialog>
       </header>
 
-      <div className="relative isolate px-6 pt-14 lg:px-8">
-        <div
-          aria-hidden="true"
-          className="absolute inset-x-0 -top-40 -z-10 transform-gpu overflow-hidden sm:-top-80"
-        >
-          <div className="relative left-[calc(50%-11rem)]" />
-        </div>
-        <div className="mx-auto max-w-2xl py-32 sm:py-48 lg:py-56">
-          <div className="hidden sm:mb-8 sm:flex sm:justify-center">
-            <div className="relative rounded-full px-3 py-1 text-sm/6 text-gray-600 ring-1 ring-gray-900/10 hover:ring-gray-900/20">
-              Now offering 24/7 emergency care and online appointment booking.{" "}
-              <a href="#" className="font-semibold text-teal-600">
-                <span aria-hidden="true" className="absolute inset-0" />
-                Learn more <span aria-hidden="true">&rarr;</span>
-              </a>
-            </div>
-          </div>
-          <div className="text-center">
-            <h1 className="text-5xl font-semibold tracking-tight text-balance text-gray-900 sm:text-7xl">
-              Compassionate care, close to home
-            </h1>
-            <p className="mt-8 text-lg font-medium text-pretty text-gray-500 sm:text-xl/8">
-              From routine checkups to specialized treatment, our hospital
-              brings together experienced doctors, modern facilities, and
-              round-the-clock support — so you and your family always have
-              trusted care when you need it most.
-            </p>
-            <div className="mt-10 flex items-center justify-center gap-x-6">
-              <Link
-                to="/register"
-                className="rounded-md bg-teal-600 px-3.5 py-2.5 text-sm font-semibold text-white shadow-xs hover:bg-teal-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
-              >
-                Book an Appointment
-              </Link>
-              <a href="#" className="text-sm/6 font-semibold text-gray-900">
-                Explore our departments <span aria-hidden="true">→</span>
-              </a>
-            </div>
-          </div>
-        </div>
-        <div
-          aria-hidden="true"
-          className="absolute inset-x-0 top-[calc(100%-13rem)] -z-10 transform-gpu overflow-hidden blur-3xl sm:top-[calc(100%-30rem)]"
-        >
-          <div className="relative left-[calc(50%+3rem)] " />
-        </div>
-      </div>
+      {/* Main Sections Composition */}
+      <main className="space-y-0">
+        <HeroSection />
+        
+        <StatsSection />
+        
+        <ServicesSection />
+        
+        <DepartmentsSection />
+        
+        <AboutSection />
+        
+        <DoctorsSection />
+        
+        <ContactSection triggerToast={triggerToast} />
+        
+        <TestimonialsSection />
+        
+        <FaqSection />
+      </main>
+
+      {/* Footer */}
+      <Footer />
+
     </div>
   );
-};
-
-export default LandingPage;
+}

@@ -1,11 +1,10 @@
 import { useState } from "react";
-import loginBanner from "../../assets/images/hms login banner.jpg";
 import { Link } from "react-router-dom";
+import Logo from "../../assets/images/logo.png";
 
 const ROLES = [
   { value: "doctor", label: "Doctor" },
   { value: "receptionist", label: "Receptionist" },
-  { value: "patient", label: "Patient" },
 ];
 
 export default function StaffRegister() {
@@ -37,201 +36,200 @@ export default function StaffRegister() {
       return;
     }
 
-    // formData already matches the expected payload shape:
-    // { email, firstName, lastName, role, password, confirmPassword }
     console.log("Staff register payload:", formData);
-    // TODO: call your register API here, e.g.
-    // await api.post("/auth/staff-register", formData);
+    // TODO: call staff register API here
   };
 
   return (
-    <div
-      className="relative flex min-h-screen w-full items-center justify-center bg-gray-900 bg-cover bg-center px-4"
-      style={{ backgroundImage: `url(${loginBanner})` }}
-    >
-      {/* Dark overlay so the form card stays readable over the photo */}
-      <div className="absolute inset-0 bg-black/50"></div>
+    <div className="flex min-h-screen w-full bg-gray-50">
+      
+      {/* Left Column - Branding Card (Hidden on Mobile) */}
+      <div className="hidden md:flex md:w-1/2 bg-linear-to-br from-teal-600 to-teal-800 text-white flex-col justify-between p-12 relative overflow-hidden">
+        {/* Soft background shape */}
+        <div className="absolute -bottom-20 -left-20 w-96 h-96 rounded-full bg-white/5 blur-3xl" />
+        
+        {/* Header Logo */}
+        <div className="flex items-center gap-3 relative z-10">
+          <img src={Logo} alt="Logo" className="h-10 w-auto brightness-200 invert" />
+          <div>
+            <h1 className="text-sm font-bold uppercase tracking-widest leading-none">City Care</h1>
+            <span className="text-[10px] text-teal-200 font-semibold uppercase tracking-wider">Clinical Workspace</span>
+          </div>
+        </div>
 
-      <div className="relative z-10 flex flex-col items-center justify-center">
-        <form
-          onSubmit={handleSubmit}
-          className="md:w-136 w-104 flex flex-col items-center justify-center bg-white/95 backdrop-blur-sm rounded-2xl shadow-2xl px-8 py-10"
-        >
-          <span className="inline-block rounded-full bg-teal-50 px-4 py-1 text-xs font-semibold tracking-wide text-teal-600 uppercase">
-            Staff Access
+        {/* Branding Info */}
+        <div className="space-y-6 relative z-10 max-w-md">
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1 text-xs font-semibold text-teal-100 uppercase tracking-wider">
+            Workspace Enrollment
           </span>
-          <h2 className="text-4xl text-gray-900 font-medium mt-4">
-            Create staff account
+          <h2 className="text-4xl font-extrabold tracking-tight leading-tight">
+            Empowering Clinical Teams With Modern Systems.
           </h2>
-          <p className="text-sm text-gray-500/90 mt-3 text-center">
-            Register as a doctor or receptionist to access the hospital
-            dashboard
+          <p className="text-sm text-teal-100/90 leading-relaxed">
+            Create your practitioner account to gain access to the clinical admin panels, department scheduling widgets, and real-time patient charts.
           </p>
 
-          {error && (
-            <p className="w-full text-sm text-red-500 mt-5 -mb-2 text-left">
-              {error}
+          <div className="pt-4 space-y-3 text-sm text-teal-150">
+            <p className="flex items-center gap-2">
+              <span className="h-2 w-2 rounded-full bg-teal-300" />
+              Integrated patient record sheets
             </p>
+            <p className="flex items-center gap-2">
+              <span className="h-2 w-2 rounded-full bg-teal-300" />
+              Roster shift configurations
+            </p>
+            <p className="flex items-center gap-2">
+              <span className="h-2 w-2 rounded-full bg-teal-300" />
+              Dynamic clinical diagnostics log
+            </p>
+          </div>
+        </div>
+
+        {/* Footer info link */}
+        <div className="text-xs text-teal-200/80 relative z-10">
+          Need to schedule a medical visit?{" "}
+          <Link to="/" className="text-white font-bold hover:underline">
+            Go to Patient Homepage &rarr;
+          </Link>
+        </div>
+      </div>
+
+      {/* Right Column - Registration Form (Full Width on Mobile) */}
+      <div className="w-full md:w-1/2 flex items-center justify-center p-8 bg-white">
+        <div className="w-full max-w-md space-y-6">
+          
+          {/* Header titles */}
+          <div className="space-y-2 text-left">
+            <span className="inline-block rounded-full bg-teal-50 px-3.5 py-1 text-xs font-semibold tracking-wide text-teal-600 uppercase">
+              Staff Portal
+            </span>
+            <h2 className="text-3xl font-extrabold text-gray-900 tracking-tight">
+              Create staff account
+            </h2>
+            <p className="text-xs text-gray-500">
+              Register as a doctor or receptionist to access the hospital portals.
+            </p>
+          </div>
+
+          {error && (
+            <div className="p-3 bg-red-50 border border-red-200 text-red-700 rounded-lg text-xs font-semibold">
+              {error}
+            </div>
           )}
 
-          <div className="flex gap-3 w-full mt-6">
-            <div className="flex items-center w-full bg-transparent border border-gray-300/60 h-12 rounded-full overflow-hidden pl-6 gap-2">
-              <svg
-                width="14"
-                height="16"
-                viewBox="0 0 14 16"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  d="M7 8a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm0 1.5c-3.11 0-7 1.567-7 3.5v1.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V13c0-1.933-3.89-3.5-7-3.5Z"
-                  fill="#6B7280"
+          {/* Form */}
+          <form onSubmit={handleSubmit} className="space-y-4">
+            
+            {/* First Name & Last Name */}
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-[10px] font-bold text-gray-500 uppercase">First Name</label>
+                <input
+                  type="text"
+                  name="firstName"
+                  value={formData.firstName}
+                  onChange={handleChange}
+                  placeholder="e.g. Sarah"
+                  className="mt-1 w-full bg-gray-50 border border-gray-300/80 rounded-lg p-2.5 text-xs focus:ring-teal-500 focus:bg-white outline-none"
+                  required
                 />
-              </svg>
+              </div>
+              <div>
+                <label className="block text-[10px] font-bold text-gray-500 uppercase">Last Name</label>
+                <input
+                  type="text"
+                  name="lastName"
+                  value={formData.lastName}
+                  onChange={handleChange}
+                  placeholder="e.g. Connor"
+                  className="mt-1 w-full bg-gray-50 border border-gray-300/80 rounded-lg p-2.5 text-xs focus:ring-teal-500 focus:bg-white outline-none"
+                  required
+                />
+              </div>
+            </div>
+
+            {/* Email Address */}
+            <div>
+              <label className="block text-[10px] font-bold text-gray-500 uppercase">Email Address</label>
               <input
-                type="text"
-                name="firstName"
-                value={formData.firstName}
+                type="email"
+                name="email"
+                value={formData.email}
                 onChange={handleChange}
-                placeholder="First name"
-                className="bg-transparent text-gray-500/80 placeholder-gray-500/80 outline-none text-sm w-full h-full"
+                placeholder="e.g. sarah.connor@citycare.com"
+                className="mt-1 w-full bg-gray-50 border border-gray-300/80 rounded-lg p-2.5 text-xs focus:ring-teal-500 focus:bg-white outline-none"
                 required
               />
             </div>
 
-            <div className="flex items-center w-full bg-transparent border border-gray-300/60 h-12 rounded-full overflow-hidden pl-6 gap-2">
-              <input
-                type="text"
-                name="lastName"
-                value={formData.lastName}
+            {/* Role selection dropdown */}
+            <div>
+              <label className="block text-[10px] font-bold text-gray-500 uppercase">Hospital Role</label>
+              <select
+                name="role"
+                value={formData.role}
                 onChange={handleChange}
-                placeholder="Last name"
-                className="bg-transparent text-gray-500/80 placeholder-gray-500/80 outline-none text-sm w-full h-full"
+                className="mt-1 w-full bg-gray-50 border border-gray-300/80 rounded-lg p-2.5 text-xs focus:ring-teal-500 focus:bg-white outline-none font-semibold text-gray-700"
                 required
-              />
-            </div>
-          </div>
-
-          <div className="flex items-center mt-6 w-full bg-transparent border border-gray-300/60 h-12 rounded-full overflow-hidden pl-6 gap-2">
-            <svg
-              width="16"
-              height="11"
-              viewBox="0 0 16 11"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                fillRule="evenodd"
-                clipRule="evenodd"
-                d="M0 .55.571 0H15.43l.57.55v9.9l-.571.55H.57L0 10.45zm1.143 1.138V9.9h13.714V1.69l-6.503 4.8h-.697zM13.749 1.1H2.25L8 5.356z"
-                fill="#6B7280"
-              />
-            </svg>
-            <input
-              type="email"
-              name="email"
-              value={formData.email}
-              onChange={handleChange}
-              placeholder="Email id"
-              className="bg-transparent text-gray-500/80 placeholder-gray-500/80 outline-none text-sm w-full h-full"
-              required
-            />
-          </div>
-
-          {/* Role selector */}
-          <div className="flex items-center mt-6 w-full bg-transparent border border-gray-300/60 h-12 rounded-full overflow-hidden pl-6 gap-2">
-            <svg
-              width="14"
-              height="16"
-              viewBox="0 0 14 16"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="M7 1.5 1 4v4c0 3.5 2.5 6.6 6 7.5 3.5-.9 6-4 6-7.5V4zM7 7.75a1.75 1.75 0 1 1 0-3.5 1.75 1.75 0 0 1 0 3.5Zm3.25 3.4c0 .58-1.46 1.35-3.25 1.35s-3.25-.77-3.25-1.35c0-.9 1.46-1.65 3.25-1.65s3.25.75 3.25 1.65Z"
-                fill="#6B7280"
-              />
-            </svg>
-            <select
-              name="role"
-              value={formData.role}
-              onChange={handleChange}
-              className="bg-transparent text-gray-500/80 outline-none text-sm w-full h-full pr-6"
-              required
-            >
-              <option value="" disabled>
-                Select role
-              </option>
-              {ROLES.map((r) => (
-                <option key={r.value} value={r.value}>
-                  {r.label}
+              >
+                <option value="" disabled>
+                  Select role
                 </option>
-              ))}
-            </select>
-          </div>
+                {ROLES.map((r) => (
+                  <option key={r.value} value={r.value}>
+                    {r.label}
+                  </option>
+                ))}
+              </select>
+            </div>
 
-          <div className="flex items-center mt-6 w-full bg-transparent border border-gray-300/60 h-12 rounded-full overflow-hidden pl-6 gap-2">
-            <svg
-              width="13"
-              height="17"
-              viewBox="0 0 13 17"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="M13 8.5c0-.938-.729-1.7-1.625-1.7h-.812V4.25C10.563 1.907 8.74 0 6.5 0S2.438 1.907 2.438 4.25V6.8h-.813C.729 6.8 0 7.562 0 8.5v6.8c0 .938.729 1.7 1.625 1.7h9.75c.896 0 1.625-.762 1.625-1.7zM4.063 4.25c0-1.406 1.093-2.55 2.437-2.55s2.438 1.144 2.438 2.55V6.8H4.061z"
-                fill="#6B7280"
+            {/* Password */}
+            <div>
+              <label className="block text-[10px] font-bold text-gray-500 uppercase">Password</label>
+              <input
+                type="password"
+                name="password"
+                value={formData.password}
+                onChange={handleChange}
+                placeholder="Enter password (min 6 characters)"
+                className="mt-1 w-full bg-gray-50 border border-gray-300/80 rounded-lg p-2.5 text-xs focus:ring-teal-500 focus:bg-white outline-none"
+                required
               />
-            </svg>
-            <input
-              type="password"
-              name="password"
-              value={formData.password}
-              onChange={handleChange}
-              placeholder="Password"
-              className="bg-transparent text-gray-500/80 placeholder-gray-500/80 outline-none text-sm w-full h-full"
-              required
-            />
-          </div>
+            </div>
 
-          <div className="flex items-center mt-6 w-full bg-transparent border border-gray-300/60 h-12 rounded-full overflow-hidden pl-6 gap-2">
-            <svg
-              width="13"
-              height="17"
-              viewBox="0 0 13 17"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="M13 8.5c0-.938-.729-1.7-1.625-1.7h-.812V4.25C10.563 1.907 8.74 0 6.5 0S2.438 1.907 2.438 4.25V6.8h-.813C.729 6.8 0 7.562 0 8.5v6.8c0 .938.729 1.7 1.625 1.7h9.75c.896 0 1.625-.762 1.625-1.7zM4.063 4.25c0-1.406 1.093-2.55 2.437-2.55s2.438 1.144 2.438 2.55V6.8H4.061z"
-                fill="#6B7280"
+            {/* Confirm Password */}
+            <div>
+              <label className="block text-[10px] font-bold text-gray-500 uppercase">Confirm Password</label>
+              <input
+                type="password"
+                name="confirmPassword"
+                value={formData.confirmPassword}
+                onChange={handleChange}
+                placeholder="Verify password"
+                className="mt-1 w-full bg-gray-50 border border-gray-300/80 rounded-lg p-2.5 text-xs focus:ring-teal-500 focus:bg-white outline-none"
+                required
               />
-            </svg>
-            <input
-              type="password"
-              name="confirmPassword"
-              value={formData.confirmPassword}
-              onChange={handleChange}
-              placeholder="Confirm password"
-              className="bg-transparent text-gray-500/80 placeholder-gray-500/80 outline-none text-sm w-full h-full"
-              required
-            />
-          </div>
+            </div>
 
-          <button
-            type="submit"
-            className="mt-8 w-full h-11 rounded-full text-white bg-teal-500 hover:opacity-90 transition-opacity"
-          >
-            Create staff account
-          </button>
-          <p className="text-gray-500/90 text-sm mt-4">
+            <button
+              type="submit"
+              className="w-full mt-2 py-3 rounded-full bg-teal-600 hover:bg-teal-500 text-white font-semibold shadow-md transition-colors cursor-pointer text-center text-xs"
+            >
+              Register Staff Account
+            </button>
+          </form>
+
+          {/* Redirection link */}
+          <p className="text-gray-500 text-xs text-center">
             Already have an account?{" "}
-            <Link to="/login" className="text-teal-500 hover:underline">
+            <Link to="/login" className="text-teal-600 font-bold hover:underline">
               Sign in
             </Link>
           </p>
-        </form>
+
+        </div>
       </div>
+
     </div>
   );
 }

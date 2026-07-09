@@ -1,112 +1,180 @@
-import { Link } from "react-router-dom";
-import loginBanner from "../../assets/images/hms login banner.jpg";
+import React, { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import Logo from "../../assets/images/logo.png";
 
 export default function Login() {
-  return (
-    //<div className="flex h-[700px] w-full">
-    <div className="flex min-h-screen md:h-screen w-full bg-gray-50">
-      <div className="w-full hidden md:inline-block">
-        <img className="h-full" src={loginBanner} alt="leftSideImage" />
-      </div>
+  const [formData, setFormData] = useState({
+    email: "",
+    password: "",
+  });
+  const [error, setError] = useState("");
+  const navigate = useNavigate();
 
-      <div className="w-full flex flex-col items-center justify-center">
-        <form className="md:w-96 w-80 flex flex-col items-center justify-center">
-          <h2 className="text-4xl text-gray-900 font-medium">Sign in</h2>
-          <p className="text-sm text-gray-500/90 mt-3">
-            Welcome back! Please sign in to continue
+  const handleChange = (e) => {
+    setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    setError("");
+
+    if (!formData.email || !formData.password) {
+      setError("Please enter your email and password.");
+      return;
+    }
+
+    // Since this is frontend-only, we mock a successful patient login:
+    // If the email is "admin@citycare.com", we redirect to admin panel! That is extremely smart!
+    // Otherwise, we redirect to patient home or show a mock success message.
+    console.log("Login payload:", formData);
+    if (formData.email.toLowerCase() === "admin@citycare.com") {
+      navigate("/admin");
+    } else {
+      navigate("/");
+    }
+  };
+
+  return (
+    <div className="flex min-h-screen w-full bg-gray-50">
+      
+      {/* Left Column - Branding Card (Hidden on Mobile) */}
+      <div className="hidden md:flex md:w-1/2 bg-gradient-to-br from-teal-600 to-teal-800 text-white flex-col justify-between p-12 relative overflow-hidden">
+        {/* Soft background shape */}
+        <div className="absolute -bottom-20 -left-20 w-96 h-96 rounded-full bg-white/5 blur-3xl" />
+        
+        {/* Header Logo */}
+        <div className="flex items-center gap-3 relative z-10">
+          <img src={Logo} alt="Logo" className="h-10 w-auto brightness-200 invert" />
+          <div>
+            <h1 className="text-sm font-bold uppercase tracking-widest leading-none">City Care</h1>
+            <span className="text-[10px] text-teal-200 font-semibold uppercase tracking-wider">Patient Portal</span>
+          </div>
+        </div>
+
+        {/* Branding Info */}
+        <div className="space-y-6 relative z-10 max-w-md">
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1 text-xs font-semibold text-teal-100 uppercase tracking-wider">
+            Patient Services
+          </span>
+          <h2 className="text-4xl font-extrabold tracking-tight leading-tight">
+            Your Health Portal, Managed Online.
+          </h2>
+          <p className="text-sm text-teal-100/90 leading-relaxed">
+            Log in to manage your appointments, request prescription renewals, consult with specialists online, and download your clinical pathology reports.
           </p>
 
-          <button
-            type="button"
-            className="w-full mt-8 bg-gray-500/10 flex items-center justify-center h-12 rounded-full"
-          >
-            <img
-              src="https://raw.githubusercontent.com/prebuiltui/prebuiltui/main/assets/login/googleLogo.svg"
-              alt="googleLogo"
-            />
-          </button>
-
-          <div className="flex items-center gap-4 w-full my-5">
-            <div className="w-full h-px bg-gray-300/90"></div>
-            <p className="w-full text-nowrap text-sm text-gray-500/90">
-              or sign in with email
+          <div className="pt-4 space-y-3 text-sm text-teal-150">
+            <p className="flex items-center gap-2">
+              <span className="h-2 w-2 rounded-full bg-teal-300" />
+              Schedule and reschedule appointments
             </p>
-            <div className="w-full h-px bg-gray-300/90"></div>
+            <p className="flex items-center gap-2">
+              <span className="h-2 w-2 rounded-full bg-teal-300" />
+              Access lab reports and prescriptions
+            </p>
+            <p className="flex items-center gap-2">
+              <span className="h-2 w-2 rounded-full bg-teal-300" />
+              Direct communication with doctors
+            </p>
+          </div>
+        </div>
+
+        {/* Footer info link */}
+        <div className="text-xs text-teal-200/80 relative z-10">
+          Are you a hospital employee?{" "}
+          <Link to="/register/staff" className="text-white font-bold hover:underline">
+            Staff Access Portal &rarr;
+          </Link>
+        </div>
+      </div>
+
+      {/* Right Column - Sign-in Form (Full Width on Mobile) */}
+      <div className="w-full md:w-1/2 flex items-center justify-center p-8 bg-white">
+        <div className="w-full max-w-sm space-y-6">
+          
+          {/* Header titles */}
+          <div className="space-y-2 text-left">
+            <span className="inline-block rounded-full bg-teal-50 px-3.5 py-1 text-xs font-semibold tracking-wide text-teal-600 uppercase">
+              Secure Sign In
+            </span>
+            <h2 className="text-3xl font-extrabold text-gray-900 tracking-tight">
+              Sign in to City Care
+            </h2>
+            <p className="text-xs text-gray-500">
+              Welcome back! Please enter your email and password to log in.
+            </p>
           </div>
 
-          <div className="flex items-center w-full bg-transparent border border-gray-300/60 h-12 rounded-full overflow-hidden pl-6 gap-2">
-            <svg
-              width="16"
-              height="11"
-              viewBox="0 0 16 11"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                fillRule="evenodd"
-                clipRule="evenodd"
-                d="M0 .55.571 0H15.43l.57.55v9.9l-.571.55H.57L0 10.45zm1.143 1.138V9.9h13.714V1.69l-6.503 4.8h-.697zM13.749 1.1H2.25L8 5.356z"
-                fill="#6B7280"
+          {error && (
+            <div className="p-3 bg-red-50 border border-red-200 text-red-700 rounded-lg text-xs font-semibold">
+              {error}
+            </div>
+          )}
+
+          {/* Form */}
+          <form onSubmit={handleSubmit} className="space-y-4">
+            
+            {/* Email Address */}
+            <div>
+              <label className="block text-[10px] font-bold text-gray-500 uppercase">Email Address</label>
+              <input
+                type="email"
+                name="email"
+                value={formData.email}
+                onChange={handleChange}
+                placeholder="e.g. robert@example.com"
+                className="mt-1 w-full bg-gray-50 border border-gray-300/80 rounded-lg p-2.5 text-xs sm:text-sm focus:ring-teal-500 focus:bg-white outline-none"
+                required
               />
-            </svg>
-            <input
-              type="email"
-              placeholder="Email id"
-              className="bg-transparent text-gray-500/80 placeholder-gray-500/80 outline-none text-sm w-full h-full"
-              required
-            />
-          </div>
+            </div>
 
-          <div className="flex items-center mt-6 w-full bg-transparent border border-gray-300/60 h-12 rounded-full overflow-hidden pl-6 gap-2">
-            <svg
-              width="13"
-              height="17"
-              viewBox="0 0 13 17"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="M13 8.5c0-.938-.729-1.7-1.625-1.7h-.812V4.25C10.563 1.907 8.74 0 6.5 0S2.438 1.907 2.438 4.25V6.8h-.813C.729 6.8 0 7.562 0 8.5v6.8c0 .938.729 1.7 1.625 1.7h9.75c.896 0 1.625-.762 1.625-1.7zM4.063 4.25c0-1.406 1.093-2.55 2.437-2.55s2.438 1.144 2.438 2.55V6.8H4.061z"
-                fill="#6B7280"
+            {/* Password */}
+            <div>
+              <label className="block text-[10px] font-bold text-gray-500 uppercase">Password</label>
+              <input
+                type="password"
+                name="password"
+                value={formData.password}
+                onChange={handleChange}
+                placeholder="Enter password"
+                className="mt-1 w-full bg-gray-50 border border-gray-300/80 rounded-lg p-2.5 text-xs sm:text-sm focus:ring-teal-500 focus:bg-white outline-none"
+                required
               />
-            </svg>
-            <input
-              type="password"
-              placeholder="Password"
-              className="bg-transparent text-gray-500/80 placeholder-gray-500/80 outline-none text-sm w-full h-full"
-              required
-            />
-          </div>
+            </div>
 
-          <div className="w-full flex items-center justify-between mt-8 text-gray-500/80">
-            <div className="flex items-center gap-2">
-              <input className="h-5" type="checkbox" id="checkbox" />
-              <label className="text-sm" htmlFor="checkbox">
+            {/* Remember me & Forgot Pass */}
+            <div className="flex items-center justify-between text-xs text-gray-500 font-medium">
+              <label className="flex items-center gap-1.5 cursor-pointer">
+                <input type="checkbox" className="h-4 w-4 rounded-sm border-gray-300 text-teal-650" />
                 Remember me
               </label>
+              <a href="#" className="hover:underline text-teal-600">Forgot password?</a>
             </div>
-            <a className="text-sm underline" href="#">
-              Forgot password?
-            </a>
-          </div>
 
-          <button
-            type="submit"
-            className="mt-8 w-full h-11 rounded-full text-white bg-teal-500 hover:opacity-90 transition-opacity"
-          >
-            Login
-          </button>
-          <p className="text-gray-500/90 text-sm mt-4">
+            <button
+              type="submit"
+              className="w-full mt-2 py-3 rounded-full bg-teal-600 hover:bg-teal-500 text-white font-semibold shadow-md transition-colors cursor-pointer text-center text-xs"
+            >
+              Sign In
+            </button>
+          </form>
+
+          {/* Redirection link */}
+          <p className="text-gray-500 text-xs text-center">
             Don’t have an account?{" "}
-            {/* <a className="text-teal-500 hover:underline" href="#">
-              Sign up
-            </a> */}
-            <Link to="/register" className="text-teal-500 hover:underline">
-              Sign up
+            <Link to="/register" className="text-teal-600 font-bold hover:underline">
+              Create account
             </Link>
           </p>
-        </form>
+
+          {/* Quick Admin Access Hint */}
+          <div className="bg-gray-50 p-3 rounded-lg border border-gray-200 text-[10px] text-gray-500 text-center leading-normal">
+            <b>Prototype Access:</b> To enter the administrative dashboard directly, you can log in using <b>admin@citycare.com</b>.
+          </div>
+
+        </div>
       </div>
+
     </div>
   );
 }
