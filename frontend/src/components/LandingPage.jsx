@@ -8,7 +8,8 @@ const navigation = [
   { name: "Departments", href: "#" },
   { name: "Doctors", href: "#" },
   { name: "Services", href: "#" },
-  { name: "About Us", href: "#" },
+  { name: "Patient Care", href: "#" },
+  { name: "Contact", href: "#" },
 ];
 
 const LandingPage = () => {
@@ -23,8 +24,12 @@ const LandingPage = () => {
         >
           <div className="flex lg:flex-1">
             <a href="#" className="-m-1.5 p-1.5">
-              <span className="sr-only">HMS</span>
-              <img src={Logo} alt="HMS Logo" className="h-8 w-auto" />
+              <span className="sr-only">City Care Hospital</span>
+              <img
+                src={Logo}
+                alt="City Care Hospital Logo"
+                className="h-12 w-auto"
+              />
             </a>
           </div>
           <div className="flex lg:hidden">
@@ -50,13 +55,13 @@ const LandingPage = () => {
           </div>
           <div className="hidden lg:flex lg:flex-1 lg:justify-end lg:items-center lg:gap-x-4">
             <Link to="/login" className="text-sm/6 font-semibold text-gray-900">
-              Log in
+              Login
             </Link>
             <Link
               to="/register"
               className="rounded-md bg-teal-600 px-3.5 py-2 text-sm font-semibold text-white shadow-xs hover:bg-teal-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
             >
-              Register
+              Book Appointment
             </Link>
           </div>
         </nav>
@@ -69,11 +74,11 @@ const LandingPage = () => {
           <DialogPanel className="fixed inset-y-0 right-0 z-50 w-full overflow-y-auto bg-white p-6 sm:max-w-sm sm:ring-1 sm:ring-gray-900/10">
             <div className="flex items-center justify-between">
               <a href="#" className="-m-1.5 p-1.5">
-                <span className="sr-only">HMS</span>
+                <span className="sr-only">City Care Hospital</span>
                 <img
-                  alt=""
-                  src="https://tailwindcss.com/plus-assets/img/logos/mark.svg?color=indigo&shade=600"
-                  className="h-8 w-auto"
+                  src={Logo}
+                  alt="City Care Hospital Logo"
+                  className="h-12 w-auto"
                 />
               </a>
               <button
@@ -103,13 +108,13 @@ const LandingPage = () => {
                     to="/login"
                     className="-mx-3 block rounded-lg px-3 py-2.5 text-base/7 font-semibold text-gray-900 hover:bg-gray-50"
                   >
-                    Log in
+                    Login
                   </Link>
                   <Link
                     to="/register"
                     className="-mx-3 block rounded-lg bg-teal-600 px-3 py-2.5 text-base/7 font-semibold text-white text-center hover:bg-teal-500"
                   >
-                    Register
+                    Book Appointment
                   </Link>
                 </div>
               </div>
@@ -128,7 +133,7 @@ const LandingPage = () => {
         <div className="mx-auto max-w-2xl py-32 sm:py-48 lg:py-56">
           <div className="hidden sm:mb-8 sm:flex sm:justify-center">
             <div className="relative rounded-full px-3 py-1 text-sm/6 text-gray-600 ring-1 ring-gray-900/10 hover:ring-gray-900/20">
-              Now offering 24/7 online appointment booking.{" "}
+              Now offering 24/7 emergency care and online appointment booking.{" "}
               <a href="#" className="font-semibold text-teal-600">
                 <span aria-hidden="true" className="absolute inset-0" />
                 Learn more <span aria-hidden="true">&rarr;</span>
@@ -137,22 +142,23 @@ const LandingPage = () => {
           </div>
           <div className="text-center">
             <h1 className="text-5xl font-semibold tracking-tight text-balance text-gray-900 sm:text-7xl">
-              Smarter care for every patient
+              Compassionate care, close to home
             </h1>
             <p className="mt-8 text-lg font-medium text-pretty text-gray-500 sm:text-xl/8">
-              Manage patients, doctors, appointments, and billing all in one
-              place. Our Hospital Management System streamlines your workflows
-              so your staff can focus on what matters most — patient care.
+              From routine checkups to specialized treatment, our hospital
+              brings together experienced doctors, modern facilities, and
+              round-the-clock support — so you and your family always have
+              trusted care when you need it most.
             </p>
             <div className="mt-10 flex items-center justify-center gap-x-6">
               <Link
                 to="/register"
                 className="rounded-md bg-teal-600 px-3.5 py-2.5 text-sm font-semibold text-white shadow-xs hover:bg-teal-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
               >
-                Get started
+                Book an Appointment
               </Link>
               <a href="#" className="text-sm/6 font-semibold text-gray-900">
-                Learn more <span aria-hidden="true">→</span>
+                Explore our departments <span aria-hidden="true">→</span>
               </a>
             </div>
           </div>
