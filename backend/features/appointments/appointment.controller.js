@@ -53,6 +53,30 @@ export const getAppointmentById = async (req, res) => {
   }
 };
 
+export const assignDoctorAndDepartment = async (req, res) => {
+  try {
+    const result = await assignDoctorAndDepartmentService(
+      parseInt(req.params.id),
+      req.body,
+      req.user,
+    );
+    return res.status(200).json({
+      success: true,
+      message: "Doctor and department assigned successfully",
+      data: result,
+    });
+  } catch (error) {
+    const status =
+      error.message === "Appointment not found"
+        ? 404
+        : error.message === "Access denied" ||
+            error.message ===
+              "Only receptionists or admins can assign a doctor and department"
+          ? 403
+          : 400;
+    return res.status(status).json({ success: false, message: error.message });
+  }
+};
 export const updateAppointmentStatus = async (req, res) => {
   try {
     const result = await updateAppointmentStatusService(

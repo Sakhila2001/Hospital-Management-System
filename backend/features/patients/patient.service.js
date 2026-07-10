@@ -15,7 +15,6 @@ const validatePatientFields = ({
   phone,
   maritalStatus,
   emergencyContactPhone,
-  nationalId,
 }) => {
   if (gender && !VALID_GENDERS.includes(gender))
     throw new Error("Gender must be male, female, or other");
@@ -45,8 +44,7 @@ const validatePatientFields = ({
       `Marital status must be one of: ${VALID_MARITAL.join(", ")}`,
     );
 
-  if (nationalId && nationalId.trim().length < 5)
-    throw new Error("National ID must be at least 5 characters");
+ 
 };
 
 const safeUser = (user) => {
@@ -72,7 +70,6 @@ export const adminCreatePatientService = async (data) => {
     phone,
     address,
     city,
-    nationalId,
     maritalStatus,
     allergies,
     chronicConditions,
@@ -116,13 +113,9 @@ export const adminCreatePatientService = async (data) => {
     phone,
     maritalStatus,
     emergencyContactPhone,
-    nationalId,
   });
 
-  if (nationalId) {
-    const existing = await Patient.findOne({ where: { nationalId } });
-    if (existing) throw new Error("National ID already exists");
-  }
+ 
 
   const result = await sequelize.transaction(async (t) => {
     const hashedPassword = await bcrypt.hash(password, 10);
@@ -147,7 +140,6 @@ export const adminCreatePatientService = async (data) => {
         phone: phone || null,
         address: address || null,
         city: city || null,
-        nationalId: nationalId || null,
         maritalStatus: maritalStatus || null,
         allergies: allergies || null,
         chronicConditions: chronicConditions || null,
@@ -176,7 +168,6 @@ export const updatePatientProfileService = async (userId, data) => {
     phone,
     address,
     city,
-    nationalId,
     maritalStatus,
     allergies,
     chronicConditions,
@@ -192,17 +183,12 @@ export const updatePatientProfileService = async (userId, data) => {
     phone,
     maritalStatus,
     emergencyContactPhone,
-    nationalId,
   });
 
   const user = await User.findByPk(userId);
   if (!user) throw new Error("User not found");
 
-  if (nationalId) {
-    const taken = await Patient.findOne({ where: { nationalId } });
-    if (taken && taken.userId !== userId)
-      throw new Error("National ID already exists");
-  }
+ 
 
   await user.update({
     ...(firstName !== undefined && { firstName }),
@@ -221,7 +207,6 @@ export const updatePatientProfileService = async (userId, data) => {
       phone: phone || null,
       address: address || null,
       city: city || null,
-      nationalId: nationalId || null,
       maritalStatus: maritalStatus || null,
       allergies: allergies || null,
       chronicConditions: chronicConditions || null,
@@ -238,7 +223,6 @@ export const updatePatientProfileService = async (userId, data) => {
       ...(phone !== undefined && { phone }),
       ...(address !== undefined && { address }),
       ...(city !== undefined && { city }),
-      ...(nationalId !== undefined && { nationalId }),
       ...(maritalStatus !== undefined && { maritalStatus }),
       ...(allergies !== undefined && { allergies }),
       ...(chronicConditions !== undefined && { chronicConditions }),
@@ -304,7 +288,6 @@ export const getPatientByUserIdService = async (userId) => {
         dateOfBirth: null,
         gender: null,
         phone: null,
-        nationalId: null,
         maritalStatus: null,
         allergies: null,
         chronicConditions: null,

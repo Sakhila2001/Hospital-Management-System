@@ -36,10 +36,6 @@ const Patient = sequelize.define(
     city: {
       type: DataTypes.STRING,
     },
-    nationalId: {
-      type: DataTypes.STRING,
-      unique: true,
-    },
     maritalStatus: {
       type: DataTypes.ENUM("single", "married", "divorced", "widowed"),
       allowNull: true,

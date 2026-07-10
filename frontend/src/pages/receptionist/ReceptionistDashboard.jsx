@@ -11,11 +11,13 @@ import Modal from "../../components/common/Modal";
 import ReceptionistOverview from "./ReceptionistOverview";
 import ReceptionistAppointments from "./ReceptionistAppointments";
 import ReceptionistPatients from "./ReceptionistPatients";
+import ReceptionistProfile from "./ReceptionistProfile";
 
 import {
   HomeIcon,
   CalendarDaysIcon,
   UserGroupIcon,
+  IdentificationIcon,
   ArrowLeftOnRectangleIcon,
   ClockIcon,
 } from "@heroicons/react/24/outline";
@@ -24,7 +26,7 @@ export default function ReceptionistDashboard() {
   const { receptionists, departments } = useAdmin();
   const navigate = useNavigate();
 
-  // Active tab: "overview", "appointments", "patients"
+  // Active tab: "overview", "appointments", "patients", "profile"
   const [activeTab, setActiveTab] = useState("overview");
 
   // Simulated logged-in receptionist: Alice Smith (userId = 201)
@@ -58,6 +60,13 @@ export default function ReceptionistDashboard() {
     if (window.confirm("Are you sure you want to log out?")) {
       navigate("/");
     }
+  };
+
+  const TAB_TITLES = {
+    overview: "Triage Queue",
+    appointments: "Scheduled Consults",
+    patients: "Patient Registry",
+    profile: "My Profile",
   };
 
   return (
@@ -122,12 +131,28 @@ export default function ReceptionistDashboard() {
                 <UserGroupIcon className="h-5 w-5" />
                 Patient Files
               </button>
+
+              <button
+                onClick={() => setActiveTab("profile")}
+                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all cursor-pointer ${
+                  activeTab === "profile"
+                    ? "bg-teal-55/70 text-teal-800 font-semibold"
+                    : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                }`}
+              >
+                <IdentificationIcon className="h-5 w-5" />
+                My Profile
+              </button>
             </nav>
           </div>
 
           {/* Profile footer with logout */}
           <div className="p-4 border-t border-gray-100 flex items-center justify-between">
-            <div className="flex items-center gap-2.5">
+            <button
+              onClick={() => setActiveTab("profile")}
+              className="flex items-center gap-2.5 cursor-pointer text-left"
+              title="View my profile"
+            >
               <div className="h-9 w-9 rounded-full bg-teal-500 text-white flex items-center justify-center font-bold text-sm shadow-sm uppercase">
                 RC
               </div>
@@ -140,7 +165,7 @@ export default function ReceptionistDashboard() {
                   {getDeptName(currentReceptionist?.departmentId)} Desk
                 </p>
               </div>
-            </div>
+            </button>
 
             <button
               onClick={handleLogout}
@@ -156,11 +181,7 @@ export default function ReceptionistDashboard() {
         <main className="flex-1 flex flex-col overflow-y-auto bg-gray-50 relative">
           <header className="h-16 bg-white border-b border-gray-200 px-6 flex items-center justify-between sticky top-0 z-20">
             <h2 className="text-lg font-semibold text-gray-800 capitalize">
-              {activeTab === "overview"
-                ? "Triage Queue"
-                : activeTab === "appointments"
-                  ? "Scheduled Consults"
-                  : "Patient Registry"}
+              {TAB_TITLES[activeTab]}
             </h2>
 
             {/* Mobile Tab Selector */}
@@ -173,6 +194,7 @@ export default function ReceptionistDashboard() {
                 <option value="overview">Triage Queue</option>
                 <option value="appointments">Confirmed Logs</option>
                 <option value="patients">Patient Files</option>
+                <option value="profile">My Profile</option>
               </select>
             </div>
 
@@ -209,6 +231,13 @@ export default function ReceptionistDashboard() {
                 receptionist={currentReceptionist}
                 patientModal={patientModal}
                 setPatientModal={setPatientModal}
+                triggerToast={triggerToast}
+              />
+            )}
+
+            {activeTab === "profile" && (
+              <ReceptionistProfile
+                receptionist={currentReceptionist}
                 triggerToast={triggerToast}
               />
             )}

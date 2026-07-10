@@ -23,6 +23,11 @@ appointmentRouter.post(
 appointmentRouter.get("/", getAllAppointments);
 appointmentRouter.get("/:id", getAppointmentById);
 appointmentRouter.patch(
+  "/:id/assign",
+  authorizeRoles("receptionist", "admin"),
+  assignDoctorAndDepartment,
+);
+appointmentRouter.patch(
   "/:id/status",
   authorizeRoles("patient", "receptionist", "doctor", "admin"),
   updateAppointmentStatus,

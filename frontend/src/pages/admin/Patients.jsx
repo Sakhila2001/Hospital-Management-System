@@ -1,8 +1,19 @@
 import React, { useState } from "react";
 import { useAdmin } from "../../context/AdminContext";
-import { PlusIcon, PencilIcon, TrashIcon, EyeIcon, MagnifyingGlassIcon } from "@heroicons/react/24/outline";
+import {
+  PlusIcon,
+  PencilIcon,
+  TrashIcon,
+  EyeIcon,
+  MagnifyingGlassIcon,
+} from "@heroicons/react/24/outline";
 
-export default function Patients({ onOpenCreateModal, onOpenEditModal, onOpenViewModal, triggerToast }) {
+export default function Patients({
+  onOpenCreateModal,
+  onOpenEditModal,
+  onOpenViewModal,
+  triggerToast,
+}) {
   const { patients, deletePatient } = useAdmin();
   const [searchTerm, setSearchTerm] = useState("");
 
@@ -13,9 +24,8 @@ export default function Patients({ onOpenCreateModal, onOpenEditModal, onOpenVie
     }
   };
 
-  const filteredPatients = patients.filter(pat => {
+  const filteredPatients = patients.filter((pat) => {
     const name = `${pat.firstName} ${pat.lastName}`.toLowerCase();
-    const id = pat.nationalId.toLowerCase();
     const city = pat.city.toLowerCase();
     const term = searchTerm.toLowerCase();
     return name.includes(term) || id.includes(term) || city.includes(term);
@@ -23,7 +33,6 @@ export default function Patients({ onOpenCreateModal, onOpenEditModal, onOpenVie
 
   return (
     <div className="space-y-4">
-      
       {/* Actions Bar */}
       <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
         <div className="relative w-full sm:w-80">
@@ -52,21 +61,35 @@ export default function Patients({ onOpenCreateModal, onOpenEditModal, onOpenVie
           <table className="w-full text-sm text-left text-gray-500">
             <thead className="text-xs text-gray-700 uppercase bg-gray-50/75 border-b border-gray-200">
               <tr>
-                <th scope="col" className="px-6 py-3">Patient Name</th>
-                <th scope="col" className="px-6 py-3">National ID</th>
-                <th scope="col" className="px-6 py-3">Phone</th>
-                <th scope="col" className="px-6 py-3">Gender / DOB</th>
-                <th scope="col" className="px-6 py-3">City</th>
-                <th scope="col" className="px-6 py-3 text-right">Actions</th>
+                <th scope="col" className="px-6 py-3">
+                  Patient Name
+                </th>
+                <th scope="col" className="px-6 py-3">
+                  National ID
+                </th>
+                <th scope="col" className="px-6 py-3">
+                  Phone
+                </th>
+                <th scope="col" className="px-6 py-3">
+                  Gender / DOB
+                </th>
+                <th scope="col" className="px-6 py-3">
+                  City
+                </th>
+                <th scope="col" className="px-6 py-3 text-right">
+                  Actions
+                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
               {filteredPatients.map((pat) => (
                 <tr key={pat.id} className="bg-white hover:bg-gray-50/50">
-                  <th scope="row" className="px-6 py-4 font-semibold text-gray-900 whitespace-nowrap">
+                  <th
+                    scope="row"
+                    className="px-6 py-4 font-semibold text-gray-900 whitespace-nowrap"
+                  >
                     {pat.firstName} {pat.lastName}
                   </th>
-                  <td className="px-6 py-4 font-medium">{pat.nationalId || "N/A"}</td>
                   <td className="px-6 py-4">{pat.phone || "N/A"}</td>
                   <td className="px-6 py-4 capitalize text-xs">
                     {pat.gender} &bull; {pat.dateOfBirth || "N/A"}
@@ -88,7 +111,12 @@ export default function Patients({ onOpenCreateModal, onOpenEditModal, onOpenVie
                       <PencilIcon className="h-5 w-5" />
                     </button>
                     <button
-                      onClick={() => handleDeletePatient(pat.userId, `${pat.firstName} ${pat.lastName}`)}
+                      onClick={() =>
+                        handleDeletePatient(
+                          pat.userId,
+                          `${pat.firstName} ${pat.lastName}`,
+                        )
+                      }
                       className="p-1 text-red-500 hover:bg-red-50 rounded-lg border border-gray-100 cursor-pointer"
                       title="Delete patient record"
                     >
@@ -106,7 +134,6 @@ export default function Patients({ onOpenCreateModal, onOpenEditModal, onOpenVie
           </div>
         )}
       </div>
-
     </div>
   );
 }

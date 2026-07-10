@@ -89,7 +89,7 @@ export default function AdminDashboard() {
       initialFields = {
         firstName: "", lastName: "", email: "", password: "", confirmPassword: "",
         dateOfBirth: "", gender: "male", bloodGroup: "O+", phone: "", address: "", city: "",
-        nationalId: "", maritalStatus: "single", allergies: "", chronicConditions: "",
+        maritalStatus: "single", allergies: "", chronicConditions: "",
         emergencyContactName: "", emergencyContactPhone: "", emergencyContactRelation: ""
       };
     }
@@ -496,7 +496,6 @@ export default function AdminDashboard() {
 
                 <div className="grid grid-cols-2 gap-4 text-sm">
                   <p><b>Email:</b> <span className="text-gray-600">{modal.data.email}</span></p>
-                  <p><b>National ID:</b> <span className="text-gray-600">{modal.data.nationalId}</span></p>
                   <p><b>Phone:</b> <span className="text-gray-600">{modal.data.phone}</span></p>
                   <p><b>Gender:</b> <span className="text-gray-600 capitalize">{modal.data.gender}</span></p>
                   <p><b>Date of Birth:</b> <span className="text-gray-600">{modal.data.dateOfBirth}</span></p>
@@ -976,15 +975,7 @@ export default function AdminDashboard() {
                       ))}
                     </select>
                   </div>
-                  <div>
-                    <label className="block text-[10px] font-bold text-gray-500 uppercase">National ID / Registry</label>
-                    <input
-                      type="text" placeholder="National Card ID"
-                      value={formFields.nationalId || ""}
-                      onChange={(e) => setFormFields({ ...formFields, nationalId: e.target.value })}
-                      className="mt-1 w-full bg-gray-50 border border-gray-300 rounded-lg p-2 text-xs focus:ring-teal-500"
-                    />
-                  </div>
+                 
 
                   <div>
                     <label className="block text-[10px] font-bold text-gray-500 uppercase">Phone Number</label>

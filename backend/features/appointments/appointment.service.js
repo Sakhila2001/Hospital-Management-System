@@ -50,7 +50,68 @@ const validateAppointmentFields = ({
   }
 };
 
+// Shared doctor-fit checks: availability, working day/hours, department match, no clash.
+// Used both at creation time (receptionist booking with a doctor already picked)
+// and in assignDoctorAndDepartmentService (receptionist assigning later).
+const validateDoctorFitsAppointment = async ({
+  doctorId,
+  departmentId,
+  appointmentDate,
+  appointmentTime,
+  excludeAppointmentId = null,
+}) => {
+  const doctor = await Doctor.findByPk(doctorId);
+  if (!doctor) throw new Error("Doctor not found");
+  if (!doctor.isAvailable)
+    throw new Error("Doctor is not available for appointments");
+
+  if (doctor.availableDays?.length) {
+    const dayName = new Date(appointmentDate).toLocaleDateString("en-US", {
+      weekday: "short",
+    });
+    if (!doctor.availableDays.includes(dayName)) {
+      throw new Error(`Doctor is not available on ${dayName}`);
+    }
+  }
+
+  if (doctor.availableTimeStart && doctor.availableTimeEnd) {
+    if (
+      appointmentTime < doctor.availableTimeStart ||
+      appointmentTime > doctor.availableTimeEnd
+    ) {
+      throw new Error(
+        `Doctor is only available between ${doctor.availableTimeStart} and ${doctor.availableTimeEnd}`,
+      );
+    }
+  }
+
+  if (doctor.departmentId !== departmentId) {
+    throw new Error("Doctor does not belong to the specified department");
+  }
+
+  const clashWhere = {
+    doctorId,
+    appointmentDate,
+    appointmentTime,
+    status: { [Op.in]: ["pending", "confirmed"] },
+  };
+  if (excludeAppointmentId) {
+    clashWhere.id = { [Op.ne]: excludeAppointmentId };
+  }
+  const clash = await Appointment.findOne({ where: clashWhere });
+  if (clash)
+    throw new Error(
+      "Doctor already has an appointment at this date and time",
+    );
+
+  return doctor;
+};
+
 //  Create Appointment (patient self-book OR receptionist books for patient) ─
+// Patients: submit only appointmentDate, appointmentTime, appointmentReason.
+//           departmentId/doctorId are NOT accepted — a receptionist assigns
+//           these afterwards via assignDoctorAndDepartmentService.
+// Receptionists: must supply departmentId (routing decision); doctorId optional.
 
 export const createAppointmentService = async (data, requester) => {
   const { roles, id: requesterId } = requester; // id = userId from JWT
@@ -77,6 +138,18 @@ export const createAppointmentService = async (data, requester) => {
       );
     }
     resolvedPatientId = patientRecord.id;
+
+    // Patients cannot choose department or doctor — receptionist routes these later
+    if (departmentId) {
+      throw new Error(
+        "Patients cannot select a department. Your appointment will be routed by our reception team.",
+      );
+    }
+    if (doctorId) {
+      throw new Error(
+        "Patients cannot assign doctors. Doctors must be assigned by a receptionist.",
+      );
+    }
   } else if (roles === "receptionist") {
     // receptionist must supply a patientId (userId of the patient)
     if (!patientId) throw new Error("patientId is required");
@@ -88,77 +161,39 @@ export const createAppointmentService = async (data, requester) => {
     if (!patientRecord) throw new Error("Patient not found");
 
     resolvedPatientId = patientRecord.id;
+
+    // Receptionist is doing the routing, so departmentId is mandatory here
+    if (!departmentId) {
+      throw new Error("departmentId is required");
+    }
   } else {
     throw new Error("Only patients and receptionists can create appointments");
   }
 
   //  Required field check ─
-  if (!departmentId || !appointmentDate || !appointmentTime) {
-    throw new Error(
-      "departmentId, appointmentDate, and appointmentTime are required",
-    );
-  }
-
-  // Prevent patients from self-assigning doctors
-  if (roles === "patient" && doctorId) {
-    throw new Error(
-      "Patients cannot assign doctors. Doctors must be assigned by a receptionist.",
-    );
+  if (!appointmentDate || !appointmentTime) {
+    throw new Error("appointmentDate and appointmentTime are required");
   }
 
   //  Field validation ─
   validateAppointmentFields({ appointmentDate, appointmentTime });
 
-  //  Department is active
-  const department = await Department.findOne({ where: { id: departmentId } });
-  if (!department) throw new Error("Department not found");
-  if (!department.isActive) throw new Error("Department is not active");
+  //  Department is active (only relevant when receptionist supplied one)
+  if (departmentId) {
+    const department = await Department.findOne({ where: { id: departmentId } });
+    if (!department) throw new Error("Department not found");
+    if (!department.isActive) throw new Error("Department is not active");
+  }
 
   if (doctorId) {
-    //  Doctor exists and is available
-    const doctor = await Doctor.findByPk(doctorId);
-    if (!doctor) throw new Error("Doctor not found");
-    if (!doctor.isAvailable)
-      throw new Error("Doctor is not available for appointments");
-
-    // Check doctor works on that day if availableDays is set
-    if (doctor.availableDays?.length) {
-      const dayName = new Date(appointmentDate).toLocaleDateString("en-US", {
-        weekday: "short",
-      });
-      if (!doctor.availableDays.includes(dayName)) {
-        throw new Error(`Doctor is not available on ${dayName}`);
-      }
-    }
-
-    // Check appointment time is within doctor's working hours
-    if (doctor.availableTimeStart && doctor.availableTimeEnd) {
-      if (
-        appointmentTime < doctor.availableTimeStart ||
-        appointmentTime > doctor.availableTimeEnd
-      ) {
-        throw new Error(
-          `Doctor is only available between ${doctor.availableTimeStart} and ${doctor.availableTimeEnd}`,
-        );
-      }
-    }
-
-    //  Doctor belongs to the given department
-    if (doctor.departmentId !== departmentId) {
-      throw new Error("Doctor does not belong to the specified department");
-    }
-
-    //  No double-booking for the same doctor at the same slot
-    const clash = await Appointment.findOne({
-      where: {
-        doctorId,
-        appointmentDate,
-        appointmentTime,
-        status: { [Op.in]: ["pending", "confirmed"] },
-      },
+    // roles === "receptionist" only reaches here, since patient path already
+    // threw above if doctorId was supplied
+    await validateDoctorFitsAppointment({
+      doctorId,
+      departmentId,
+      appointmentDate,
+      appointmentTime,
     });
-    if (clash)
-      throw new Error("Doctor already has an appointment at this date and time");
   }
 
   //  Resolve receptionist id (createdBy)
@@ -176,8 +211,8 @@ export const createAppointmentService = async (data, requester) => {
     return Appointment.create(
       {
         patientId: resolvedPatientId,
-        doctorId,
-        departmentId,
+        doctorId: doctorId || null,
+        departmentId: departmentId || null,
         appointmentDate,
         appointmentTime,
         appointmentReason: appointmentReason || null,
@@ -197,7 +232,6 @@ export const getAllAppointmentsService = async (requester) => {
   const { roles, id: userId } = requester;
 
   let whereClause = {};
-  let includeExtra = [];
 
   if (roles === "patient") {
     const patient = await Patient.findOne({ where: { userId } });
@@ -291,6 +325,110 @@ export const getAppointmentByIdService = async (appointmentId, requester) => {
   return { appointment };
 };
 
+//  Assign / reassign doctor + department (receptionist routing step) ─
+// Used for appointments a patient self-booked without a department/doctor.
+// Only pending appointments can be routed. A receptionist may only route
+// appointments into their own department (or reassign within it).
+
+export const assignDoctorAndDepartmentService = async (
+  appointmentId,
+  data,
+  requester,
+) => {
+  const { roles, id: userId } = requester;
+  const { doctorId, departmentId } = data;
+
+  if (roles !== "receptionist" && roles !== "admin") {
+    throw new Error(
+      "Only receptionists or admins can assign a doctor and department",
+    );
+  }
+
+  if (!doctorId && !departmentId) {
+    throw new Error(
+      "At least one of doctorId or departmentId must be provided",
+    );
+  }
+
+  const appointment = await Appointment.findByPk(appointmentId);
+  if (!appointment) throw new Error("Appointment not found");
+
+  if (appointment.status !== "pending") {
+    throw new Error(
+      "Only pending appointments can be assigned a doctor or department",
+    );
+  }
+
+  let receptionist = null;
+  if (roles === "receptionist") {
+    receptionist = await Receptionist.findOne({ where: { userId } });
+    if (!receptionist) throw new Error("Receptionist profile not found");
+  }
+
+  const updateData = {};
+
+  // Resolve which department this appointment will end up in
+  const resolvedDepartmentId = departmentId || appointment.departmentId;
+  if (!resolvedDepartmentId) {
+    throw new Error("departmentId is required");
+  }
+
+  if (departmentId) {
+    const department = await Department.findOne({
+      where: { id: departmentId },
+    });
+    if (!department) throw new Error("Department not found");
+    if (!department.isActive) throw new Error("Department is not active");
+
+    // A receptionist can only route into their own department
+    if (roles === "receptionist" && receptionist.departmentId !== departmentId) {
+      throw new Error("Access denied: department mismatch");
+    }
+
+    updateData.departmentId = departmentId;
+  } else if (
+    roles === "receptionist" &&
+    receptionist.departmentId !== appointment.departmentId
+  ) {
+    // No new departmentId given, but the appointment's existing department
+    // isn't this receptionist's — block assigning a doctor into it
+    throw new Error("Access denied");
+  }
+
+  if (doctorId) {
+    await validateDoctorFitsAppointment({
+      doctorId,
+      departmentId: resolvedDepartmentId,
+      appointmentDate: appointment.appointmentDate,
+      appointmentTime: appointment.appointmentTime,
+      excludeAppointmentId: appointment.id,
+    });
+    updateData.doctorId = doctorId;
+  }
+
+  await appointment.update(updateData);
+
+  const updated = await Appointment.findByPk(appointmentId, {
+    include: [
+      {
+        model: Patient,
+        include: [
+          { model: User, attributes: ["id", "firstName", "lastName", "email"] },
+        ],
+      },
+      {
+        model: Doctor,
+        include: [
+          { model: User, attributes: ["id", "firstName", "lastName", "email"] },
+        ],
+      },
+      { model: Department, attributes: ["id", "name"] },
+    ],
+  });
+
+  return { appointment: updated };
+};
+
 //  Update appointment status
 // Rules:
 //   patient     → can only cancel their own pending appointment
@@ -308,6 +446,11 @@ export const updateAppointmentStatusService = async (
 
   if (!status) throw new Error("status is required");
   validateAppointmentFields({ status, cancelledReason });
+
+  // Cancellation always requires a reason, regardless of who is cancelling
+  if (status === "cancelled" && !cancelledReason?.trim()) {
+    throw new Error("A cancellation reason is required");
+  }
 
   const appointment = await Appointment.findByPk(appointmentId);
   if (!appointment) throw new Error("Appointment not found");
@@ -352,7 +495,7 @@ export const updateAppointmentStatusService = async (
 
   const updateData = { status };
   if (status === "cancelled") {
-    updateData.cancelledReason = cancelledReason;
+    updateData.cancelledReason = cancelledReason.trim();
     updateData.cancelledAt = new Date();
   }
 
@@ -366,53 +509,17 @@ export const updateAppointmentStatusService = async (
 
   if (doctorId) {
     if (roles === "patient") {
-      throw new Error("Patients cannot assign doctors. Doctors must be assigned by a receptionist.");
+      throw new Error(
+        "Patients cannot assign doctors. Doctors must be assigned by a receptionist.",
+      );
     }
-    const doctor = await Doctor.findByPk(doctorId);
-    if (!doctor) throw new Error("Doctor not found");
-    if (!doctor.isAvailable)
-      throw new Error("Doctor is not available for appointments");
-
-    // Check doctor works on that day if availableDays is set
-    if (doctor.availableDays?.length) {
-      const dayName = new Date(appointment.appointmentDate).toLocaleDateString("en-US", {
-        weekday: "short",
-      });
-      if (!doctor.availableDays.includes(dayName)) {
-        throw new Error(`Doctor is not available on ${dayName}`);
-      }
-    }
-
-    // Check appointment time is within doctor's working hours
-    if (doctor.availableTimeStart && doctor.availableTimeEnd) {
-      if (
-        appointment.appointmentTime < doctor.availableTimeStart ||
-        appointment.appointmentTime > doctor.availableTimeEnd
-      ) {
-        throw new Error(
-          `Doctor is only available between ${doctor.availableTimeStart} and ${doctor.availableTimeEnd}`,
-        );
-      }
-    }
-
-    // Doctor belongs to the given department
-    if (doctor.departmentId !== appointment.departmentId) {
-      throw new Error("Doctor does not belong to the specified department");
-    }
-
-    // No double-booking for the same doctor at the same slot
-    const clash = await Appointment.findOne({
-      where: {
-        doctorId,
-        appointmentDate: appointment.appointmentDate,
-        appointmentTime: appointment.appointmentTime,
-        status: { [Op.in]: ["pending", "confirmed"] },
-        id: { [Op.ne]: appointment.id } // exclude self
-      },
+    await validateDoctorFitsAppointment({
+      doctorId,
+      departmentId: appointment.departmentId,
+      appointmentDate: appointment.appointmentDate,
+      appointmentTime: appointment.appointmentTime,
+      excludeAppointmentId: appointment.id,
     });
-    if (clash)
-      throw new Error("Doctor already has an appointment at this date and time");
-
     updateData.doctorId = doctorId;
   }
 
