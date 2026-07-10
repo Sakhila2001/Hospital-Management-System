@@ -3,6 +3,7 @@ import { useAdmin } from "../../context/AdminContext";
 import Card from "../../components/common/Card";
 import Button from "../../components/common/Button";
 import Input from "../../components/common/Input";
+import { useOutletContext } from "react-router-dom";
 
 const TYPES = [
   { value: "consultation", label: "General Consultation" },
@@ -11,11 +12,8 @@ const TYPES = [
   { value: "emergency", label: "Emergency Trauma (Triage priority)" },
 ];
 
-export default function PatientBookAppointment({
-  patient,
-  setActiveTab,
-  triggerToast,
-}) {
+export default function PatientBookAppointment() {
+  const { patient, triggerToast } = useOutletContext();
   const { bookAppointment } = useAdmin();
 
   const [formData, setFormData] = useState({
@@ -146,10 +144,8 @@ export default function PatientBookAppointment({
             variant="primary"
             className="w-full sm:w-auto flex items-center justify-center gap-2 rounded-full bg-teal-600 hover:bg-teal-500 text-white px-5 py-2.5 text-sm font-semibold shadow-xs transition-colors cursor-pointer"
           >
-             Request Appointment
+            Request Appointment
           </Button>
-
-       
         </div>
       </form>
     </Card>

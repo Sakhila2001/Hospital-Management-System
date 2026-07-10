@@ -4,15 +4,14 @@ import Card from "../../components/common/Card";
 import Badge from "../../components/common/Badge";
 import Button from "../../components/common/Button";
 import Modal from "../../components/common/Modal";
+import { useOutletContext } from "react-router-dom";
 import {
   MagnifyingGlassIcon,
   ExclamationTriangleIcon,
 } from "@heroicons/react/24/outline";
 
-export default function ReceptionistAppointments({
-  receptionist,
-  triggerToast,
-}) {
+export default function ReceptionistAppointments() {
+  const { receptionist, triggerToast } = useOutletContext();
   const { appointments, updateAppointmentStatus } = useAdmin();
   const [searchTerm, setSearchTerm] = useState("");
 

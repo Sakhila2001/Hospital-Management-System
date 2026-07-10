@@ -5,10 +5,12 @@ import Button from "../../components/common/Button";
 import Input from "../../components/common/Input";
 import Modal from "../../components/common/Modal";
 import ReceptionistProfileView from "./ReceptionistProfileView";
+import { useOutletContext } from "react-router-dom";
 
 const SHIFT_OPTIONS = ["Morning", "Evening", "Night"];
 
-export default function ReceptionistProfile({ receptionist, triggerToast }) {
+export default function ReceptionistProfile() {
+    const { receptionist, triggerToast } = useOutletContext();
   const { updateReceptionist, departments = [] } = useAdmin();
 
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);

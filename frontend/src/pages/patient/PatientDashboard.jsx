@@ -1,15 +1,9 @@
 import React, { useState } from "react";
 import { useAdmin } from "../../context/AdminContext";
 import Logo from "../../assets/images/logo.png";
-import { useNavigate } from "react-router-dom";
-
+import { useNavigate, useLocation, Outlet } from "react-router-dom";
 // Centralized components
 import Toast from "../../components/common/Toast";
-
-// Modular Sub-views
-import PatientOverview from "./PatientOverview";
-import PatientBookAppointment from "./PatientBookAppointment";
-import PatientProfile from "./PatientProfile";
 
 import {
   HomeIcon,
@@ -24,7 +18,8 @@ export default function PatientDashboard() {
   const navigate = useNavigate();
 
   // Active tab: "overview", "book", "profile"
-  const [activeTab, setActiveTab] = useState("overview");
+  const location = useLocation();
+  const activeTab = location.pathname.split("/")[2] || "overview";
 
   // Simulated logged-in patient: Robert Paulson (userId = 301)
   const currentPatient = patients.find((p) => p.userId === 301) || patients[0];
@@ -73,7 +68,7 @@ export default function PatientDashboard() {
 
             <nav className="p-4 space-y-1">
               <button
-                onClick={() => setActiveTab("overview")}
+                onClick={() => navigate("/patient/overview")}
                 className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all cursor-pointer ${
                   activeTab === "overview"
                     ? "bg-teal-55/70 text-teal-800 font-semibold"
@@ -85,7 +80,7 @@ export default function PatientDashboard() {
               </button>
 
               <button
-                onClick={() => setActiveTab("book")}
+                onClick={() => navigate("/patient/book")}
                 className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all cursor-pointer ${
                   activeTab === "book"
                     ? "bg-teal-55/70 text-teal-800 font-semibold"
@@ -97,7 +92,7 @@ export default function PatientDashboard() {
               </button>
 
               <button
-                onClick={() => setActiveTab("profile")}
+                onClick={() => navigate("/patient/profile")}
                 className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all cursor-pointer ${
                   activeTab === "profile"
                     ? "bg-teal-55/70 text-teal-800 font-semibold"
@@ -150,7 +145,7 @@ export default function PatientDashboard() {
             <div className="md:hidden flex gap-2">
               <select
                 value={activeTab}
-                onChange={(e) => setActiveTab(e.target.value)}
+                onChange={(e) => navigate(`/patient/${e.target.value}`)}
                 className="bg-gray-50 border border-gray-300 text-gray-900 text-xs rounded-lg p-1.5 focus:ring-teal-500"
               >
                 <option value="overview">Overview</option>
@@ -173,28 +168,7 @@ export default function PatientDashboard() {
           </header>
 
           <div className="p-6 space-y-6 max-w-5xl mx-auto w-full">
-            {activeTab === "overview" && (
-              <PatientOverview
-                patient={currentPatient}
-                setActiveTab={setActiveTab}
-                triggerToast={triggerToast}
-              />
-            )}
-
-            {activeTab === "book" && (
-              <PatientBookAppointment
-                patient={currentPatient}
-                setActiveTab={setActiveTab}
-                triggerToast={triggerToast}
-              />
-            )}
-
-            {activeTab === "profile" && (
-              <PatientProfile
-                patient={currentPatient}
-                triggerToast={triggerToast}
-              />
-            )}
+            <Outlet context={{ patient: currentPatient, triggerToast }} />
           </div>
         </main>
       </div>

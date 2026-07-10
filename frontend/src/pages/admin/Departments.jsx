@@ -1,13 +1,20 @@
 import React, { useState } from "react";
+import { useOutletContext } from "react-router-dom";
 import { useAdmin } from "../../context/AdminContext";
 import { PlusIcon, PencilIcon, TrashIcon } from "@heroicons/react/24/outline";
 
-export default function Departments({ onOpenCreateModal, onOpenEditModal, triggerToast }) {
+export default function Departments() {
+  const { onOpenCreateModal, onOpenEditModal, triggerToast } =
+    useOutletContext();
   const { departments, toggleDepartmentStatus, deleteDepartment } = useAdmin();
   const [showInactiveDepts, setShowInactiveDepts] = useState(true);
 
   const handleDeleteDepartment = (id, name) => {
-    if (window.confirm(`Are you sure you want to delete the "${name}" department?`)) {
+    if (
+      window.confirm(
+        `Are you sure you want to delete the "${name}" department?`,
+      )
+    ) {
       try {
         deleteDepartment(id);
         triggerToast("Department deleted successfully");
@@ -17,11 +24,12 @@ export default function Departments({ onOpenCreateModal, onOpenEditModal, trigge
     }
   };
 
-  const filteredDepts = departments.filter(dept => showInactiveDepts || dept.isActive);
+  const filteredDepts = departments.filter(
+    (dept) => showInactiveDepts || dept.isActive,
+  );
 
   return (
     <div className="space-y-4">
-      
       {/* Actions Bar */}
       <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
         <div className="flex items-center gap-4">
@@ -35,7 +43,7 @@ export default function Departments({ onOpenCreateModal, onOpenEditModal, trigge
             Show Deactivated / Inactive Departments
           </label>
         </div>
-        
+
         <button
           onClick={() => onOpenCreateModal("department")}
           className="w-full sm:w-auto flex items-center justify-center gap-2 rounded-full bg-teal-600 hover:bg-teal-500 text-white px-5 py-2.5 text-sm font-semibold shadow-xs transition-colors cursor-pointer"
@@ -51,35 +59,58 @@ export default function Departments({ onOpenCreateModal, onOpenEditModal, trigge
           <table className="w-full text-sm text-left text-gray-500">
             <thead className="text-xs text-gray-700 uppercase bg-gray-50/75 border-b border-gray-200">
               <tr>
-                <th scope="col" className="px-6 py-3">Department Name</th>
-                <th scope="col" className="px-6 py-3">Description</th>
-                <th scope="col" className="px-6 py-3 text-center">Status</th>
-                <th scope="col" className="px-6 py-3 text-right">Actions</th>
+                <th scope="col" className="px-6 py-3">
+                  Department Name
+                </th>
+                <th scope="col" className="px-6 py-3">
+                  Description
+                </th>
+                <th scope="col" className="px-6 py-3 text-center">
+                  Status
+                </th>
+                <th scope="col" className="px-6 py-3 text-right">
+                  Actions
+                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
               {filteredDepts.map((dept) => (
-                <tr key={dept.id} className={`bg-white hover:bg-gray-50/50 ${!dept.isActive ? "bg-gray-50/20" : ""}`}>
-                  <th scope="row" className="px-6 py-4 font-semibold text-gray-900 whitespace-nowrap">
+                <tr
+                  key={dept.id}
+                  className={`bg-white hover:bg-gray-50/50 ${!dept.isActive ? "bg-gray-50/20" : ""}`}
+                >
+                  <th
+                    scope="row"
+                    className="px-6 py-4 font-semibold text-gray-900 whitespace-nowrap"
+                  >
                     {dept.name}
                   </th>
-                  <td className="px-6 py-4 max-w-sm leading-relaxed">{dept.description || "No description provided."}</td>
+                  <td className="px-6 py-4 max-w-sm leading-relaxed">
+                    {dept.description || "No description provided."}
+                  </td>
                   <td className="px-6 py-4 text-center">
-                    <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold uppercase tracking-wider inline-block ${
-                      dept.isActive ? "bg-green-50 text-green-700" : "bg-gray-100 text-gray-700"
-                    }`}>
+                    <span
+                      className={`px-2.5 py-0.5 rounded-full text-xs font-semibold uppercase tracking-wider inline-block ${
+                        dept.isActive
+                          ? "bg-green-50 text-green-700"
+                          : "bg-gray-100 text-gray-700"
+                      }`}
+                    >
                       {dept.isActive ? "Active" : "Inactive"}
                     </span>
                   </td>
                   <td className="px-6 py-4 text-right flex items-center justify-end gap-2">
                     <button
-                      onClick={() => { toggleDepartmentStatus(dept.id); triggerToast(`Department status toggled`); }}
+                      onClick={() => {
+                        toggleDepartmentStatus(dept.id);
+                        triggerToast(`Department status toggled`);
+                      }}
                       className="px-2.5 py-1 text-xs font-semibold rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-800 border border-transparent cursor-pointer"
                       title="Toggle Status"
                     >
                       Toggle Status
                     </button>
-                    
+
                     <button
                       onClick={() => onOpenEditModal("department", dept)}
                       className="p-1 text-teal-600 hover:bg-teal-50 rounded-lg border border-transparent hover:border-teal-100 cursor-pointer"
@@ -102,7 +133,6 @@ export default function Departments({ onOpenCreateModal, onOpenEditModal, trigge
           </table>
         </div>
       </div>
-
     </div>
   );
 }

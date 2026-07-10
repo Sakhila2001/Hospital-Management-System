@@ -1,19 +1,10 @@
 import React, { useState } from "react";
 import { useAdmin } from "../../context/AdminContext";
 import Logo from "../../assets/images/logo.png";
-import { useNavigate } from "react-router-dom";
-
+import { useNavigate, useLocation, Outlet } from "react-router-dom";
 // Reusable Components
 import Modal from "../../components/common/Modal";
 import Toast from "../../components/common/Toast";
-
-// Sub-Views
-import Overview from "./Overview";
-import Appointments from "./Appointments";
-import Departments from "./Departments";
-import Doctors from "./Doctors";
-import Receptionists from "./Receptionists";
-import Patients from "./Patients";
 
 import {
   HomeIcon,
@@ -24,7 +15,7 @@ import {
   IdentificationIcon,
   ClockIcon,
   ArrowLeftOnRectangleIcon,
-  BellIcon
+  BellIcon,
 } from "@heroicons/react/24/outline";
 
 export default function AdminDashboard() {
@@ -40,14 +31,14 @@ export default function AdminDashboard() {
     updatePatient,
     notifications,
     markAllNotificationsAsRead,
-    clearAllNotifications
+    clearAllNotifications,
   } = useAdmin();
 
   const navigate = useNavigate();
 
   // Tab State: "overview", "appointments", "departments", "doctors", "receptionists", "patients"
-  const [activeTab, setActiveTab] = useState("overview");
-
+  const location = useLocation();
+  const activeTab = location.pathname.split("/")[2] || "overview";
   // Notification panel open/close
   const [showNotifications, setShowNotifications] = useState(false);
 
@@ -55,14 +46,23 @@ export default function AdminDashboard() {
   const unreadCount = notifications.filter((n) => !n.read).length;
 
   // Toast State
-  const [toast, setToast] = useState({ show: false, message: "", type: "success" });
+  const [toast, setToast] = useState({
+    show: false,
+    message: "",
+    type: "success",
+  });
   const triggerToast = (message, type = "success") => {
     setToast({ show: true, message, type });
   };
 
   // Modal State
   // { show: false, type: "doctor" | "department" | "receptionist" | "patient", action: "create" | "edit" | "view", data: null }
-  const [modal, setModal] = useState({ show: false, type: "", action: "", data: null });
+  const [modal, setModal] = useState({
+    show: false,
+    type: "",
+    action: "",
+    data: null,
+  });
 
   // Form State
   const [formFields, setFormFields] = useState({});
@@ -73,24 +73,58 @@ export default function AdminDashboard() {
       initialFields = { name: "", description: "", isActive: true };
     } else if (type === "doctor") {
       initialFields = {
-        firstName: "", lastName: "", email: "", password: "", confirmPassword: "",
-        departmentId: departments.find(d => d.isActive)?.id || "",
-        specialization: "", qualification: "", experienceYears: 0, licenseNumber: "",
-        phone: "", gender: "male", dateOfBirth: "", address: "", isAvailable: true,
-        availableDays: [], availableTimeStart: "09:00", availableTimeEnd: "17:00", bio: ""
+        firstName: "",
+        lastName: "",
+        email: "",
+        password: "",
+        confirmPassword: "",
+        departmentId: departments.find((d) => d.isActive)?.id || "",
+        specialization: "",
+        qualification: "",
+        experienceYears: 0,
+        licenseNumber: "",
+        phone: "",
+        gender: "male",
+        dateOfBirth: "",
+        address: "",
+        isAvailable: true,
+        availableDays: [],
+        availableTimeStart: "09:00",
+        availableTimeEnd: "17:00",
+        bio: "",
       };
     } else if (type === "receptionist") {
       initialFields = {
-        firstName: "", lastName: "", email: "", password: "", confirmPassword: "",
-        departmentId: departments.find(d => d.isActive)?.id || "",
-        phone: "", shift: "Morning", employeeCode: "", joinedDate: new Date().toISOString().split("T")[0]
+        firstName: "",
+        lastName: "",
+        email: "",
+        password: "",
+        confirmPassword: "",
+        departmentId: departments.find((d) => d.isActive)?.id || "",
+        phone: "",
+        shift: "Morning",
+        employeeCode: "",
+        joinedDate: new Date().toISOString().split("T")[0],
       };
     } else if (type === "patient") {
       initialFields = {
-        firstName: "", lastName: "", email: "", password: "", confirmPassword: "",
-        dateOfBirth: "", gender: "male", bloodGroup: "O+", phone: "", address: "", city: "",
-        maritalStatus: "single", allergies: "", chronicConditions: "",
-        emergencyContactName: "", emergencyContactPhone: "", emergencyContactRelation: ""
+        firstName: "",
+        lastName: "",
+        email: "",
+        password: "",
+        confirmPassword: "",
+        dateOfBirth: "",
+        gender: "male",
+        bloodGroup: "O+",
+        phone: "",
+        address: "",
+        city: "",
+        maritalStatus: "single",
+        allergies: "",
+        chronicConditions: "",
+        emergencyContactName: "",
+        emergencyContactPhone: "",
+        emergencyContactRelation: "",
       };
     }
     setFormFields(initialFields);
@@ -115,7 +149,8 @@ export default function AdminDashboard() {
     e.preventDefault();
     try {
       if (modal.type === "department") {
-        if (!formFields.name.trim()) throw new Error("Department name is required");
+        if (!formFields.name.trim())
+          throw new Error("Department name is required");
         if (modal.action === "create") {
           createDepartment(formFields);
           triggerToast("Department created successfully!");
@@ -125,14 +160,21 @@ export default function AdminDashboard() {
         }
       } else if (modal.type === "doctor") {
         if (modal.action === "create") {
-          if (!formFields.firstName || !formFields.lastName || !formFields.email || !formFields.password) {
+          if (
+            !formFields.firstName ||
+            !formFields.lastName ||
+            !formFields.email ||
+            !formFields.password
+          ) {
             throw new Error("Please fill in all user login credentials");
           }
           if (formFields.password !== formFields.confirmPassword) {
             throw new Error("Passwords do not match");
           }
-          if (!formFields.specialization) throw new Error("Specialization is required");
-          if (!formFields.departmentId) throw new Error("Please assign a department");
+          if (!formFields.specialization)
+            throw new Error("Specialization is required");
+          if (!formFields.departmentId)
+            throw new Error("Please assign a department");
           createDoctor(formFields);
           triggerToast("Doctor created successfully!");
         } else {
@@ -141,13 +183,19 @@ export default function AdminDashboard() {
         }
       } else if (modal.type === "receptionist") {
         if (modal.action === "create") {
-          if (!formFields.firstName || !formFields.lastName || !formFields.email || !formFields.password) {
+          if (
+            !formFields.firstName ||
+            !formFields.lastName ||
+            !formFields.email ||
+            !formFields.password
+          ) {
             throw new Error("Please fill in all user login credentials");
           }
           if (formFields.password !== formFields.confirmPassword) {
             throw new Error("Passwords do not match");
           }
-          if (!formFields.departmentId) throw new Error("Please assign a department");
+          if (!formFields.departmentId)
+            throw new Error("Please assign a department");
           createReceptionist(formFields);
           triggerToast("Receptionist created successfully!");
         } else {
@@ -156,7 +204,12 @@ export default function AdminDashboard() {
         }
       } else if (modal.type === "patient") {
         if (modal.action === "create") {
-          if (!formFields.firstName || !formFields.lastName || !formFields.email || !formFields.password) {
+          if (
+            !formFields.firstName ||
+            !formFields.lastName ||
+            !formFields.email ||
+            !formFields.password
+          ) {
             throw new Error("Please fill in all user credentials");
           }
           if (formFields.password !== formFields.confirmPassword) {
@@ -186,9 +239,15 @@ export default function AdminDashboard() {
     }
   };
 
+  const outletContext = {
+    onOpenCreateModal: handleOpenCreateModal,
+    onOpenEditModal: handleOpenEditModal,
+    onOpenViewModal: handleOpenViewModal,
+    triggerToast,
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col font-sans antialiased text-gray-900">
-      
       {/* Toast Notification */}
       <Toast
         message={toast.message}
@@ -199,21 +258,24 @@ export default function AdminDashboard() {
 
       {/* Main Dashboard Layout */}
       <div className="flex flex-1 h-screen overflow-hidden">
-        
         {/* Sidebar Navigation */}
         <aside className="w-64 bg-white border-r border-gray-200 flex flex-col justify-between hidden md:flex">
           <div>
             <div className="h-16 flex items-center px-6 border-b border-gray-100 gap-3">
               <img src={Logo} alt="Logo" className="h-10 w-auto" />
               <div>
-                <h1 className="text-sm font-semibold text-gray-800 tracking-wide uppercase">City Care</h1>
-                <p className="text-xs text-teal-600 font-medium -mt-1">Admin Portal</p>
+                <h1 className="text-sm font-semibold text-gray-800 tracking-wide uppercase">
+                  City Care
+                </h1>
+                <p className="text-xs text-teal-600 font-medium -mt-1">
+                  Admin Portal
+                </p>
               </div>
             </div>
 
             <nav className="p-4 space-y-1">
               <button
-                onClick={() => setActiveTab("overview")}
+                onClick={() => navigate("/admin/overview")}
                 className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all cursor-pointer ${
                   activeTab === "overview"
                     ? "bg-teal-55/70 text-teal-800 font-semibold"
@@ -225,7 +287,7 @@ export default function AdminDashboard() {
               </button>
 
               <button
-                onClick={() => setActiveTab("appointments")}
+                onClick={() => navigate("/admin/appointments")}
                 className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all cursor-pointer ${
                   activeTab === "appointments"
                     ? "bg-teal-55/70 text-teal-800 font-semibold"
@@ -237,7 +299,7 @@ export default function AdminDashboard() {
               </button>
 
               <button
-                onClick={() => setActiveTab("departments")}
+                onClick={() => navigate("/admin/departments")}
                 className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all cursor-pointer ${
                   activeTab === "departments"
                     ? "bg-teal-55/70 text-teal-800 font-semibold"
@@ -249,7 +311,7 @@ export default function AdminDashboard() {
               </button>
 
               <button
-                onClick={() => setActiveTab("doctors")}
+                onClick={() => navigate("/admin/doctors")}
                 className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all cursor-pointer ${
                   activeTab === "doctors"
                     ? "bg-teal-55/70 text-teal-800 font-semibold"
@@ -261,7 +323,7 @@ export default function AdminDashboard() {
               </button>
 
               <button
-                onClick={() => setActiveTab("receptionists")}
+                onClick={() => navigate("/admin/receptionists")}
                 className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all cursor-pointer ${
                   activeTab === "receptionists"
                     ? "bg-teal-55/70 text-teal-800 font-semibold"
@@ -273,7 +335,7 @@ export default function AdminDashboard() {
               </button>
 
               <button
-                onClick={() => setActiveTab("patients")}
+                onClick={() => navigate("/admin/patients")}
                 className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all cursor-pointer ${
                   activeTab === "patients"
                     ? "bg-teal-55/70 text-teal-800 font-semibold"
@@ -293,11 +355,15 @@ export default function AdminDashboard() {
                 AD
               </div>
               <div>
-                <p className="text-sm font-medium text-gray-800 leading-tight">Admin User</p>
-                <p className="text-[10px] text-gray-400 font-medium">Chief Executive</p>
+                <p className="text-sm font-medium text-gray-800 leading-tight">
+                  Admin User
+                </p>
+                <p className="text-[10px] text-gray-400 font-medium">
+                  Chief Executive
+                </p>
               </div>
             </div>
-            
+
             <button
               onClick={handleLogout}
               className="p-1.5 hover:bg-red-50 text-gray-400 hover:text-red-550 rounded-lg transition-colors border border-transparent hover:border-red-100 cursor-pointer"
@@ -310,15 +376,16 @@ export default function AdminDashboard() {
 
         {/* Content Area */}
         <main className="flex-1 flex flex-col overflow-y-auto bg-gray-50 relative">
-          
           <header className="h-16 bg-white border-b border-gray-200 px-6 flex items-center justify-between sticky top-0 z-20">
             <div className="flex items-center gap-4">
-              <h2 className="text-lg font-semibold text-gray-800 capitalize">{activeTab} Management</h2>
-              
+              <h2 className="text-lg font-semibold text-gray-800 capitalize">
+                {activeTab} Management
+              </h2>
+
               <div className="md:hidden flex gap-2">
                 <select
                   value={activeTab}
-                  onChange={(e) => setActiveTab(e.target.value)}
+                  onChange={(e) => navigate(`/admin/${e.target.value}`)}
                   className="bg-gray-50 border border-gray-300 text-gray-900 text-xs rounded-lg focus:ring-teal-500 p-1.5"
                 >
                   <option value="overview">Overview</option>
@@ -330,7 +397,7 @@ export default function AdminDashboard() {
                 </select>
               </div>
             </div>
-            
+
             <div className="flex items-center gap-4 relative">
               {/* Notification Bell */}
               <button
@@ -350,17 +417,25 @@ export default function AdminDashboard() {
               {showNotifications && (
                 <div className="absolute right-0 top-10 w-80 bg-white border border-gray-200 rounded-xl shadow-2xl z-30 flex flex-col max-h-96 overflow-hidden">
                   <div className="p-3 bg-gray-50 border-b border-gray-200/80 flex items-center justify-between">
-                    <span className="text-xs font-bold text-gray-800">Event Alerts ({unreadCount} new)</span>
+                    <span className="text-xs font-bold text-gray-800">
+                      Event Alerts ({unreadCount} new)
+                    </span>
                     <div className="flex gap-2">
                       <button
-                        onClick={() => { markAllNotificationsAsRead(); triggerToast("Notifications marked as read"); }}
+                        onClick={() => {
+                          markAllNotificationsAsRead();
+                          triggerToast("Notifications marked as read");
+                        }}
                         className="text-[10px] text-teal-600 hover:text-teal-550 font-bold hover:underline cursor-pointer"
                       >
                         Mark read
                       </button>
                       <span className="text-gray-300 text-xs">|</span>
                       <button
-                        onClick={() => { clearAllNotifications(); triggerToast("Notifications cleared"); }}
+                        onClick={() => {
+                          clearAllNotifications();
+                          triggerToast("Notifications cleared");
+                        }}
                         className="text-[10px] text-red-500 hover:text-red-550 font-bold hover:underline cursor-pointer"
                       >
                         Clear
@@ -370,14 +445,18 @@ export default function AdminDashboard() {
 
                   <div className="overflow-y-auto divide-y divide-gray-100 flex-1">
                     {notifications.map((n) => (
-                      <div 
-                        key={n.id} 
+                      <div
+                        key={n.id}
                         className={`p-3 text-xs leading-relaxed transition-all ${
-                          !n.read ? "bg-teal-50/20 font-semibold" : "text-gray-650"
+                          !n.read
+                            ? "bg-teal-50/20 font-semibold"
+                            : "text-gray-650"
                         }`}
                       >
                         <p className="text-gray-800">{n.message}</p>
-                        <span className="text-[10px] text-gray-400 font-medium block mt-1">{n.time}</span>
+                        <span className="text-[10px] text-gray-400 font-medium block mt-1">
+                          {n.time}
+                        </span>
                       </div>
                     ))}
                     {notifications.length === 0 && (
@@ -391,60 +470,21 @@ export default function AdminDashboard() {
 
               <div className="flex items-center gap-2 text-xs font-semibold text-gray-500 bg-gray-100 px-3 py-1.5 rounded-full">
                 <ClockIcon className="h-4 w-4 text-teal-600" />
-                <span>Today: {new Date().toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</span>
+                <span>
+                  Today:{" "}
+                  {new Date().toLocaleDateString(undefined, {
+                    weekday: "long",
+                    year: "numeric",
+                    month: "long",
+                    day: "numeric",
+                  })}
+                </span>
               </div>
             </div>
           </header>
 
           <div className="p-6 space-y-6 max-w-7xl mx-auto w-full">
-            {/* SUB-VIEWS */}
-            {activeTab === "overview" && (
-              <Overview 
-                onOpenCreateModal={handleOpenCreateModal} 
-                setActiveTab={setActiveTab} 
-                triggerToast={triggerToast} 
-              />
-            )}
-            
-            {activeTab === "appointments" && (
-              <Appointments 
-                triggerToast={triggerToast} 
-              />
-            )}
-            
-            {activeTab === "departments" && (
-              <Departments 
-                onOpenCreateModal={handleOpenCreateModal} 
-                onOpenEditModal={handleOpenEditModal} 
-                triggerToast={triggerToast} 
-              />
-            )}
-            
-            {activeTab === "doctors" && (
-              <Doctors 
-                onOpenCreateModal={handleOpenCreateModal} 
-                onOpenEditModal={handleOpenEditModal} 
-                onOpenViewModal={handleOpenViewModal} 
-                triggerToast={triggerToast} 
-              />
-            )}
-            
-            {activeTab === "receptionists" && (
-              <Receptionists 
-                onOpenCreateModal={handleOpenCreateModal} 
-                onOpenEditModal={handleOpenEditModal} 
-                triggerToast={triggerToast} 
-              />
-            )}
-            
-            {activeTab === "patients" && (
-              <Patients 
-                onOpenCreateModal={handleOpenCreateModal} 
-                onOpenEditModal={handleOpenEditModal} 
-                onOpenViewModal={handleOpenViewModal} 
-                triggerToast={triggerToast} 
-              />
-            )}
+            <Outlet context={outletContext} />
           </div>
         </main>
       </div>
@@ -452,7 +492,9 @@ export default function AdminDashboard() {
       {/* --- REUSABLE MODAL CONTAINER --- */}
       <Modal
         isOpen={modal.show}
-        onClose={() => setModal({ show: false, type: "", action: "", data: null })}
+        onClose={() =>
+          setModal({ show: false, type: "", action: "", data: null })
+        }
         badge={`${modal.type} management`}
         title={`${modal.action} ${modal.type}`}
       >
@@ -461,27 +503,79 @@ export default function AdminDashboard() {
             {modal.type === "doctor" && modal.data && (
               <div className="space-y-3">
                 <div className="border-b border-gray-100 pb-3 flex items-center justify-between">
-                  <h4 className="text-base font-bold text-gray-800">Dr. {modal.data.firstName} {modal.data.lastName}</h4>
-                  <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-teal-50 text-teal-700">License: {modal.data.licenseNumber}</span>
+                  <h4 className="text-base font-bold text-gray-800">
+                    Dr. {modal.data.firstName} {modal.data.lastName}
+                  </h4>
+                  <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-teal-50 text-teal-700">
+                    License: {modal.data.licenseNumber}
+                  </span>
                 </div>
-                
+
                 <div className="grid grid-cols-2 gap-4 text-sm">
-                  <p><b>Email:</b> <span className="text-gray-600">{modal.data.email}</span></p>
-                  <p><b>Department:</b> <span className="text-gray-600">{getDeptName(modal.data.departmentId)}</span></p>
-                  <p><b>Specialization:</b> <span className="text-gray-600">{modal.data.specialization}</span></p>
-                  <p><b>Qualification:</b> <span className="text-gray-600">{modal.data.qualification}</span></p>
-                  <p><b>Experience:</b> <span className="text-gray-600">{modal.data.experienceYears} Years</span></p>
-                  <p><b>Gender:</b> <span className="text-gray-600 capitalize">{modal.data.gender}</span></p>
-                  <p><b>Phone:</b> <span className="text-gray-600">{modal.data.phone}</span></p>
-                  <p><b>DOB:</b> <span className="text-gray-600">{modal.data.dateOfBirth}</span></p>
-                  <p className="col-span-2"><b>Clinic Hours:</b> <span className="text-gray-600">{modal.data.availableTimeStart} to {modal.data.availableTimeEnd} ({modal.data.availableDays.join(", ")})</span></p>
-                  <p className="col-span-2"><b>Address:</b> <span className="text-gray-600">{modal.data.address}</span></p>
+                  <p>
+                    <b>Email:</b>{" "}
+                    <span className="text-gray-600">{modal.data.email}</span>
+                  </p>
+                  <p>
+                    <b>Department:</b>{" "}
+                    <span className="text-gray-600">
+                      {getDeptName(modal.data.departmentId)}
+                    </span>
+                  </p>
+                  <p>
+                    <b>Specialization:</b>{" "}
+                    <span className="text-gray-600">
+                      {modal.data.specialization}
+                    </span>
+                  </p>
+                  <p>
+                    <b>Qualification:</b>{" "}
+                    <span className="text-gray-600">
+                      {modal.data.qualification}
+                    </span>
+                  </p>
+                  <p>
+                    <b>Experience:</b>{" "}
+                    <span className="text-gray-600">
+                      {modal.data.experienceYears} Years
+                    </span>
+                  </p>
+                  <p>
+                    <b>Gender:</b>{" "}
+                    <span className="text-gray-600 capitalize">
+                      {modal.data.gender}
+                    </span>
+                  </p>
+                  <p>
+                    <b>Phone:</b>{" "}
+                    <span className="text-gray-600">{modal.data.phone}</span>
+                  </p>
+                  <p>
+                    <b>DOB:</b>{" "}
+                    <span className="text-gray-600">
+                      {modal.data.dateOfBirth}
+                    </span>
+                  </p>
+                  <p className="col-span-2">
+                    <b>Clinic Hours:</b>{" "}
+                    <span className="text-gray-600">
+                      {modal.data.availableTimeStart} to{" "}
+                      {modal.data.availableTimeEnd} (
+                      {modal.data.availableDays.join(", ")})
+                    </span>
+                  </p>
+                  <p className="col-span-2">
+                    <b>Address:</b>{" "}
+                    <span className="text-gray-600">{modal.data.address}</span>
+                  </p>
                 </div>
 
                 {modal.data.bio && (
                   <div className="border-t border-gray-100 pt-3">
                     <p className="text-sm font-semibold">Biography:</p>
-                    <p className="text-xs text-gray-500 leading-relaxed mt-1">{modal.data.bio}</p>
+                    <p className="text-xs text-gray-500 leading-relaxed mt-1">
+                      {modal.data.bio}
+                    </p>
                   </div>
                 )}
               </div>
@@ -490,37 +584,82 @@ export default function AdminDashboard() {
             {modal.type === "patient" && modal.data && (
               <div className="space-y-3">
                 <div className="border-b border-gray-100 pb-3 flex items-center justify-between">
-                  <h4 className="text-base font-bold text-gray-800">{modal.data.firstName} {modal.data.lastName}</h4>
-                  <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700">Blood: {modal.data.bloodGroup}</span>
+                  <h4 className="text-base font-bold text-gray-800">
+                    {modal.data.firstName} {modal.data.lastName}
+                  </h4>
+                  <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700">
+                    Blood: {modal.data.bloodGroup}
+                  </span>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4 text-sm">
-                  <p><b>Email:</b> <span className="text-gray-600">{modal.data.email}</span></p>
-                  <p><b>Phone:</b> <span className="text-gray-600">{modal.data.phone}</span></p>
-                  <p><b>Gender:</b> <span className="text-gray-600 capitalize">{modal.data.gender}</span></p>
-                  <p><b>Date of Birth:</b> <span className="text-gray-600">{modal.data.dateOfBirth}</span></p>
-                  <p><b>Marital Status:</b> <span className="text-gray-600 capitalize">{modal.data.maritalStatus}</span></p>
-                  <p><b>City:</b> <span className="text-gray-600">{modal.data.city}</span></p>
-                  <p className="col-span-2"><b>Address:</b> <span className="text-gray-600">{modal.data.address}</span></p>
+                  <p>
+                    <b>Email:</b>{" "}
+                    <span className="text-gray-600">{modal.data.email}</span>
+                  </p>
+                  <p>
+                    <b>Phone:</b>{" "}
+                    <span className="text-gray-600">{modal.data.phone}</span>
+                  </p>
+                  <p>
+                    <b>Gender:</b>{" "}
+                    <span className="text-gray-600 capitalize">
+                      {modal.data.gender}
+                    </span>
+                  </p>
+                  <p>
+                    <b>Date of Birth:</b>{" "}
+                    <span className="text-gray-600">
+                      {modal.data.dateOfBirth}
+                    </span>
+                  </p>
+                  <p>
+                    <b>Marital Status:</b>{" "}
+                    <span className="text-gray-600 capitalize">
+                      {modal.data.maritalStatus}
+                    </span>
+                  </p>
+                  <p>
+                    <b>City:</b>{" "}
+                    <span className="text-gray-600">{modal.data.city}</span>
+                  </p>
+                  <p className="col-span-2">
+                    <b>Address:</b>{" "}
+                    <span className="text-gray-600">{modal.data.address}</span>
+                  </p>
                 </div>
 
                 <div className="border-t border-gray-100 pt-3 grid grid-cols-2 gap-4 text-xs">
                   <div className="bg-red-50/50 p-2.5 rounded-lg border border-red-100">
                     <p className="font-semibold text-red-800">Allergies:</p>
-                    <p className="text-red-700 mt-1 font-medium">{modal.data.allergies || "None declared."}</p>
+                    <p className="text-red-700 mt-1 font-medium">
+                      {modal.data.allergies || "None declared."}
+                    </p>
                   </div>
                   <div className="bg-yellow-50/50 p-2.5 rounded-lg border border-yellow-100">
-                    <p className="font-semibold text-yellow-800">Chronic Conditions:</p>
-                    <p className="text-yellow-700 mt-1 font-medium">{modal.data.chronicConditions || "None declared."}</p>
+                    <p className="font-semibold text-yellow-800">
+                      Chronic Conditions:
+                    </p>
+                    <p className="text-yellow-700 mt-1 font-medium">
+                      {modal.data.chronicConditions || "None declared."}
+                    </p>
                   </div>
                 </div>
 
                 <div className="border-t border-gray-100 pt-3">
-                  <p className="text-sm font-semibold text-gray-800">Emergency Contact Info:</p>
+                  <p className="text-sm font-semibold text-gray-800">
+                    Emergency Contact Info:
+                  </p>
                   <div className="mt-2 grid grid-cols-3 gap-2 text-xs bg-gray-50 p-2.5 rounded-lg border border-gray-200">
-                    <p><b>Contact:</b> {modal.data.emergencyContactName}</p>
-                    <p><b>Phone:</b> {modal.data.emergencyContactPhone}</p>
-                    <p><b>Relation:</b> {modal.data.emergencyContactRelation}</p>
+                    <p>
+                      <b>Contact:</b> {modal.data.emergencyContactName}
+                    </p>
+                    <p>
+                      <b>Phone:</b> {modal.data.emergencyContactPhone}
+                    </p>
+                    <p>
+                      <b>Relation:</b> {modal.data.emergencyContactRelation}
+                    </p>
                   </div>
                 </div>
               </div>
@@ -528,38 +667,60 @@ export default function AdminDashboard() {
           </div>
         ) : (
           <form onSubmit={handleFormSubmit} className="space-y-4">
-            
             {/* DEPARTMENT FORM */}
             {modal.type === "department" && (
               <>
                 <div>
-                  <label className="block text-xs font-bold text-gray-600 uppercase">Department Name</label>
+                  <label className="block text-xs font-bold text-gray-600 uppercase">
+                    Department Name
+                  </label>
                   <input
-                    type="text" required
+                    type="text"
+                    required
                     value={formFields.name || ""}
-                    onChange={(e) => setFormFields({ ...formFields, name: e.target.value })}
+                    onChange={(e) =>
+                      setFormFields({ ...formFields, name: e.target.value })
+                    }
                     className="mt-1 w-full bg-gray-50 border border-gray-300 rounded-lg p-2.5 text-sm focus:ring-teal-500 focus:border-teal-500 outline-none"
                     placeholder="e.g. Ophthalmology"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-gray-600 uppercase">Description</label>
+                  <label className="block text-xs font-bold text-gray-600 uppercase">
+                    Description
+                  </label>
                   <textarea
                     rows="3"
                     value={formFields.description || ""}
-                    onChange={(e) => setFormFields({ ...formFields, description: e.target.value })}
+                    onChange={(e) =>
+                      setFormFields({
+                        ...formFields,
+                        description: e.target.value,
+                      })
+                    }
                     className="mt-1 w-full bg-gray-50 border border-gray-300 rounded-lg p-2.5 text-sm focus:ring-teal-500 focus:border-teal-500 outline-none"
                     placeholder="Detailed department overview..."
                   />
                 </div>
                 <div className="flex items-center gap-2">
                   <input
-                    type="checkbox" id="deptActive"
+                    type="checkbox"
+                    id="deptActive"
                     checked={formFields.isActive !== false}
-                    onChange={(e) => setFormFields({ ...formFields, isActive: e.target.checked })}
+                    onChange={(e) =>
+                      setFormFields({
+                        ...formFields,
+                        isActive: e.target.checked,
+                      })
+                    }
                     className="h-4 w-4 rounded-sm border-gray-300 text-teal-600 focus:ring-teal-500"
                   />
-                  <label htmlFor="deptActive" className="text-sm font-semibold text-gray-600 cursor-pointer">Active Department</label>
+                  <label
+                    htmlFor="deptActive"
+                    className="text-sm font-semibold text-gray-600 cursor-pointer"
+                  >
+                    Active Department
+                  </label>
                 </div>
               </>
             )}
@@ -569,25 +730,48 @@ export default function AdminDashboard() {
               <>
                 {modal.action === "create" && (
                   <div className="bg-teal-50/50 p-3 rounded-lg border border-teal-100/50 space-y-3">
-                    <p className="text-xs font-bold text-teal-700 uppercase">1. User Authentication Credentials</p>
+                    <p className="text-xs font-bold text-teal-700 uppercase">
+                      1. User Authentication Credentials
+                    </p>
                     <div className="grid grid-cols-2 gap-3">
                       <input
-                        type="email" required placeholder="User Email Address"
+                        type="email"
+                        required
+                        placeholder="User Email Address"
                         value={formFields.email || ""}
-                        onChange={(e) => setFormFields({ ...formFields, email: e.target.value })}
+                        onChange={(e) =>
+                          setFormFields({
+                            ...formFields,
+                            email: e.target.value,
+                          })
+                        }
                         className="w-full bg-white border border-gray-300 rounded-lg p-2 text-xs focus:ring-teal-500 outline-none"
                       />
                       <div className="flex gap-2">
                         <input
-                          type="password" required placeholder="Password"
+                          type="password"
+                          required
+                          placeholder="Password"
                           value={formFields.password || ""}
-                          onChange={(e) => setFormFields({ ...formFields, password: e.target.value })}
+                          onChange={(e) =>
+                            setFormFields({
+                              ...formFields,
+                              password: e.target.value,
+                            })
+                          }
                           className="w-full bg-white border border-gray-300 rounded-lg p-2 text-xs focus:ring-teal-500"
                         />
                         <input
-                          type="password" required placeholder="Confirm"
+                          type="password"
+                          required
+                          placeholder="Confirm"
                           value={formFields.confirmPassword || ""}
-                          onChange={(e) => setFormFields({ ...formFields, confirmPassword: e.target.value })}
+                          onChange={(e) =>
+                            setFormFields({
+                              ...formFields,
+                              confirmPassword: e.target.value,
+                            })
+                          }
                           className="w-full bg-white border border-gray-300 rounded-lg p-2 text-xs focus:ring-teal-500"
                         />
                       </div>
@@ -595,102 +779,180 @@ export default function AdminDashboard() {
                   </div>
                 )}
 
-                <p className="text-xs font-bold text-gray-600 uppercase border-b border-gray-100 pb-1">2. Profile Details</p>
-                
+                <p className="text-xs font-bold text-gray-600 uppercase border-b border-gray-100 pb-1">
+                  2. Profile Details
+                </p>
+
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-[10px] font-bold text-gray-500 uppercase">First Name</label>
+                    <label className="block text-[10px] font-bold text-gray-500 uppercase">
+                      First Name
+                    </label>
                     <input
-                      type="text" required
+                      type="text"
+                      required
                       value={formFields.firstName || ""}
-                      onChange={(e) => setFormFields({ ...formFields, firstName: e.target.value })}
+                      onChange={(e) =>
+                        setFormFields({
+                          ...formFields,
+                          firstName: e.target.value,
+                        })
+                      }
                       className="mt-1 w-full bg-gray-50 border border-gray-300 rounded-lg p-2 text-xs focus:ring-teal-500"
                     />
                   </div>
                   <div>
-                    <label className="block text-[10px] font-bold text-gray-500 uppercase">Last Name</label>
+                    <label className="block text-[10px] font-bold text-gray-500 uppercase">
+                      Last Name
+                    </label>
                     <input
-                      type="text" required
+                      type="text"
+                      required
                       value={formFields.lastName || ""}
-                      onChange={(e) => setFormFields({ ...formFields, lastName: e.target.value })}
+                      onChange={(e) =>
+                        setFormFields({
+                          ...formFields,
+                          lastName: e.target.value,
+                        })
+                      }
                       className="mt-1 w-full bg-gray-50 border border-gray-300 rounded-lg p-2 text-xs focus:ring-teal-500"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-[10px] font-bold text-gray-500 uppercase">Department</label>
+                    <label className="block text-[10px] font-bold text-gray-500 uppercase">
+                      Department
+                    </label>
                     <select
                       value={formFields.departmentId || ""}
-                      onChange={(e) => setFormFields({ ...formFields, departmentId: Number(e.target.value) })}
+                      onChange={(e) =>
+                        setFormFields({
+                          ...formFields,
+                          departmentId: Number(e.target.value),
+                        })
+                      }
                       className="mt-1 w-full bg-gray-50 border border-gray-300 rounded-lg p-2 text-xs focus:ring-teal-500"
                     >
-                      {departments.filter(d => d.isActive).map(d => (
-                        <option key={d.id} value={d.id}>{d.name}</option>
-                      ))}
+                      {departments
+                        .filter((d) => d.isActive)
+                        .map((d) => (
+                          <option key={d.id} value={d.id}>
+                            {d.name}
+                          </option>
+                        ))}
                     </select>
                   </div>
                   <div>
-                    <label className="block text-[10px] font-bold text-gray-500 uppercase">Specialization</label>
+                    <label className="block text-[10px] font-bold text-gray-500 uppercase">
+                      Specialization
+                    </label>
                     <input
-                      type="text" required placeholder="e.g. Cardiologist"
+                      type="text"
+                      required
+                      placeholder="e.g. Cardiologist"
                       value={formFields.specialization || ""}
-                      onChange={(e) => setFormFields({ ...formFields, specialization: e.target.value })}
+                      onChange={(e) =>
+                        setFormFields({
+                          ...formFields,
+                          specialization: e.target.value,
+                        })
+                      }
                       className="mt-1 w-full bg-gray-50 border border-gray-300 rounded-lg p-2 text-xs focus:ring-teal-500"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-[10px] font-bold text-gray-500 uppercase">Qualification</label>
+                    <label className="block text-[10px] font-bold text-gray-500 uppercase">
+                      Qualification
+                    </label>
                     <input
-                      type="text" placeholder="e.g. MD, DM"
+                      type="text"
+                      placeholder="e.g. MD, DM"
                       value={formFields.qualification || ""}
-                      onChange={(e) => setFormFields({ ...formFields, qualification: e.target.value })}
+                      onChange={(e) =>
+                        setFormFields({
+                          ...formFields,
+                          qualification: e.target.value,
+                        })
+                      }
                       className="mt-1 w-full bg-gray-50 border border-gray-300 rounded-lg p-2 text-xs focus:ring-teal-500"
                     />
                   </div>
                   <div>
-                    <label className="block text-[10px] font-bold text-gray-500 uppercase">License Number</label>
+                    <label className="block text-[10px] font-bold text-gray-500 uppercase">
+                      License Number
+                    </label>
                     <input
-                      type="text" placeholder="e.g. LIC1000"
+                      type="text"
+                      placeholder="e.g. LIC1000"
                       value={formFields.licenseNumber || ""}
-                      onChange={(e) => setFormFields({ ...formFields, licenseNumber: e.target.value })}
+                      onChange={(e) =>
+                        setFormFields({
+                          ...formFields,
+                          licenseNumber: e.target.value,
+                        })
+                      }
                       className="mt-1 w-full bg-gray-50 border border-gray-300 rounded-lg p-2 text-xs focus:ring-teal-500"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-[10px] font-bold text-gray-500 uppercase">Years of Experience</label>
+                    <label className="block text-[10px] font-bold text-gray-500 uppercase">
+                      Years of Experience
+                    </label>
                     <input
-                      type="number" min="0" max="60"
+                      type="number"
+                      min="0"
+                      max="60"
                       value={formFields.experienceYears || 0}
-                      onChange={(e) => setFormFields({ ...formFields, experienceYears: Number(e.target.value) })}
+                      onChange={(e) =>
+                        setFormFields({
+                          ...formFields,
+                          experienceYears: Number(e.target.value),
+                        })
+                      }
                       className="mt-1 w-full bg-gray-50 border border-gray-300 rounded-lg p-2 text-xs focus:ring-teal-500"
                     />
                   </div>
                   <div>
-                    <label className="block text-[10px] font-bold text-gray-500 uppercase">Phone Number</label>
+                    <label className="block text-[10px] font-bold text-gray-500 uppercase">
+                      Phone Number
+                    </label>
                     <input
                       type="text"
                       value={formFields.phone || ""}
-                      onChange={(e) => setFormFields({ ...formFields, phone: e.target.value })}
+                      onChange={(e) =>
+                        setFormFields({ ...formFields, phone: e.target.value })
+                      }
                       className="mt-1 w-full bg-gray-50 border border-gray-300 rounded-lg p-2 text-xs focus:ring-teal-500"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-[10px] font-bold text-gray-500 uppercase">Date of Birth</label>
+                    <label className="block text-[10px] font-bold text-gray-500 uppercase">
+                      Date of Birth
+                    </label>
                     <input
                       type="date"
                       value={formFields.dateOfBirth || ""}
-                      onChange={(e) => setFormFields({ ...formFields, dateOfBirth: e.target.value })}
+                      onChange={(e) =>
+                        setFormFields({
+                          ...formFields,
+                          dateOfBirth: e.target.value,
+                        })
+                      }
                       className="mt-1 w-full bg-gray-50 border border-gray-300 rounded-lg p-2 text-xs focus:ring-teal-500"
                     />
                   </div>
                   <div>
-                    <label className="block text-[10px] font-bold text-gray-500 uppercase">Gender</label>
+                    <label className="block text-[10px] font-bold text-gray-500 uppercase">
+                      Gender
+                    </label>
                     <select
                       value={formFields.gender || "male"}
-                      onChange={(e) => setFormFields({ ...formFields, gender: e.target.value })}
+                      onChange={(e) =>
+                        setFormFields({ ...formFields, gender: e.target.value })
+                      }
                       className="mt-1 w-full bg-gray-50 border border-gray-300 rounded-lg p-2 text-xs focus:ring-teal-500"
                     >
                       <option value="male">Male</option>
@@ -700,41 +962,63 @@ export default function AdminDashboard() {
                   </div>
 
                   <div>
-                    <label className="block text-[10px] font-bold text-gray-500 uppercase">Work Hours Start</label>
+                    <label className="block text-[10px] font-bold text-gray-500 uppercase">
+                      Work Hours Start
+                    </label>
                     <input
                       type="time"
                       value={formFields.availableTimeStart || ""}
-                      onChange={(e) => setFormFields({ ...formFields, availableTimeStart: e.target.value })}
+                      onChange={(e) =>
+                        setFormFields({
+                          ...formFields,
+                          availableTimeStart: e.target.value,
+                        })
+                      }
                       className="mt-1 w-full bg-gray-50 border border-gray-300 rounded-lg p-2 text-xs focus:ring-teal-500"
                     />
                   </div>
                   <div>
-                    <label className="block text-[10px] font-bold text-gray-500 uppercase">Work Hours End</label>
+                    <label className="block text-[10px] font-bold text-gray-500 uppercase">
+                      Work Hours End
+                    </label>
                     <input
                       type="time"
                       value={formFields.availableTimeEnd || ""}
-                      onChange={(e) => setFormFields({ ...formFields, availableTimeEnd: e.target.value })}
+                      onChange={(e) =>
+                        setFormFields({
+                          ...formFields,
+                          availableTimeEnd: e.target.value,
+                        })
+                      }
                       className="mt-1 w-full bg-gray-50 border border-gray-300 rounded-lg p-2 text-xs focus:ring-teal-500"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-[10px] font-bold text-gray-500 uppercase">Address</label>
+                  <label className="block text-[10px] font-bold text-gray-500 uppercase">
+                    Address
+                  </label>
                   <input
                     type="text"
                     value={formFields.address || ""}
-                    onChange={(e) => setFormFields({ ...formFields, address: e.target.value })}
+                    onChange={(e) =>
+                      setFormFields({ ...formFields, address: e.target.value })
+                    }
                     className="mt-1.5 w-full bg-gray-50 border border-gray-300 rounded-lg p-2.5 text-xs focus:ring-teal-500"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-[10px] font-bold text-gray-500 uppercase">Bio / Doctor notes</label>
+                  <label className="block text-[10px] font-bold text-gray-500 uppercase">
+                    Bio / Doctor notes
+                  </label>
                   <textarea
                     rows="2"
                     value={formFields.bio || ""}
-                    onChange={(e) => setFormFields({ ...formFields, bio: e.target.value })}
+                    onChange={(e) =>
+                      setFormFields({ ...formFields, bio: e.target.value })
+                    }
                     className="mt-1.5 w-full bg-gray-50 border border-gray-300 rounded-lg p-2 text-xs focus:ring-teal-500"
                     placeholder="Brief biography details..."
                   />
@@ -745,34 +1029,51 @@ export default function AdminDashboard() {
                     <input
                       type="checkbox"
                       checked={formFields.isAvailable !== false}
-                      onChange={(e) => setFormFields({ ...formFields, isAvailable: e.target.checked })}
+                      onChange={(e) =>
+                        setFormFields({
+                          ...formFields,
+                          isAvailable: e.target.checked,
+                        })
+                      }
                       className="h-4 w-4 rounded-sm border-gray-300 text-teal-600 focus:ring-teal-500 cursor-pointer"
                     />
                     Available for New Patients
                   </label>
-                  
+
                   <div className="text-xs">
-                    <span className="font-bold text-gray-500 uppercase">Workdays:</span>{" "}
-                    {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((day) => {
-                      const isChecked = formFields.availableDays?.includes(day);
-                      return (
-                        <label key={day} className="inline-flex items-center mr-2 font-semibold text-gray-600 cursor-pointer">
-                          <input
-                            type="checkbox"
-                            checked={isChecked}
-                            onChange={(e) => {
-                              const currentDays = formFields.availableDays || [];
-                              const newDays = e.target.checked
-                                ? [...currentDays, day]
-                                : currentDays.filter(d => d !== day);
-                              setFormFields({ ...formFields, availableDays: newDays });
-                            }}
-                            className="h-3 w-3 mr-1 text-teal-600 border-gray-300 cursor-pointer"
-                          />
-                          {day}
-                        </label>
-                      );
-                    })}
+                    <span className="font-bold text-gray-500 uppercase">
+                      Workdays:
+                    </span>{" "}
+                    {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map(
+                      (day) => {
+                        const isChecked =
+                          formFields.availableDays?.includes(day);
+                        return (
+                          <label
+                            key={day}
+                            className="inline-flex items-center mr-2 font-semibold text-gray-600 cursor-pointer"
+                          >
+                            <input
+                              type="checkbox"
+                              checked={isChecked}
+                              onChange={(e) => {
+                                const currentDays =
+                                  formFields.availableDays || [];
+                                const newDays = e.target.checked
+                                  ? [...currentDays, day]
+                                  : currentDays.filter((d) => d !== day);
+                                setFormFields({
+                                  ...formFields,
+                                  availableDays: newDays,
+                                });
+                              }}
+                              className="h-3 w-3 mr-1 text-teal-600 border-gray-300 cursor-pointer"
+                            />
+                            {day}
+                          </label>
+                        );
+                      },
+                    )}
                   </div>
                 </div>
               </>
@@ -783,25 +1084,48 @@ export default function AdminDashboard() {
               <>
                 {modal.action === "create" && (
                   <div className="bg-teal-50/50 p-3 rounded-lg border border-teal-100/50 space-y-3">
-                    <p className="text-xs font-bold text-teal-700 uppercase">1. User Authentication Credentials</p>
+                    <p className="text-xs font-bold text-teal-700 uppercase">
+                      1. User Authentication Credentials
+                    </p>
                     <div className="grid grid-cols-2 gap-3">
                       <input
-                        type="email" required placeholder="User Email Address"
+                        type="email"
+                        required
+                        placeholder="User Email Address"
                         value={formFields.email || ""}
-                        onChange={(e) => setFormFields({ ...formFields, email: e.target.value })}
+                        onChange={(e) =>
+                          setFormFields({
+                            ...formFields,
+                            email: e.target.value,
+                          })
+                        }
                         className="w-full bg-white border border-gray-300 rounded-lg p-2 text-xs focus:ring-teal-500 outline-none"
                       />
                       <div className="flex gap-2">
                         <input
-                          type="password" required placeholder="Password"
+                          type="password"
+                          required
+                          placeholder="Password"
                           value={formFields.password || ""}
-                          onChange={(e) => setFormFields({ ...formFields, password: e.target.value })}
+                          onChange={(e) =>
+                            setFormFields({
+                              ...formFields,
+                              password: e.target.value,
+                            })
+                          }
                           className="w-full bg-white border border-gray-300 rounded-lg p-2 text-xs focus:ring-teal-500"
                         />
                         <input
-                          type="password" required placeholder="Confirm"
+                          type="password"
+                          required
+                          placeholder="Confirm"
                           value={formFields.confirmPassword || ""}
-                          onChange={(e) => setFormFields({ ...formFields, confirmPassword: e.target.value })}
+                          onChange={(e) =>
+                            setFormFields({
+                              ...formFields,
+                              confirmPassword: e.target.value,
+                            })
+                          }
                           className="w-full bg-white border border-gray-300 rounded-lg p-2 text-xs focus:ring-teal-500"
                         />
                       </div>
@@ -809,55 +1133,96 @@ export default function AdminDashboard() {
                   </div>
                 )}
 
-                <p className="text-xs font-bold text-gray-600 uppercase border-b border-gray-100 pb-1">2. Staff Details</p>
-                
+                <p className="text-xs font-bold text-gray-600 uppercase border-b border-gray-100 pb-1">
+                  2. Staff Details
+                </p>
+
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-[10px] font-bold text-gray-500 uppercase">First Name</label>
+                    <label className="block text-[10px] font-bold text-gray-500 uppercase">
+                      First Name
+                    </label>
                     <input
-                      type="text" required
+                      type="text"
+                      required
                       value={formFields.firstName || ""}
-                      onChange={(e) => setFormFields({ ...formFields, firstName: e.target.value })}
+                      onChange={(e) =>
+                        setFormFields({
+                          ...formFields,
+                          firstName: e.target.value,
+                        })
+                      }
                       className="mt-1 w-full bg-gray-50 border border-gray-300 rounded-lg p-2 text-xs focus:ring-teal-500"
                     />
                   </div>
                   <div>
-                    <label className="block text-[10px] font-bold text-gray-500 uppercase">Last Name</label>
+                    <label className="block text-[10px] font-bold text-gray-500 uppercase">
+                      Last Name
+                    </label>
                     <input
-                      type="text" required
+                      type="text"
+                      required
                       value={formFields.lastName || ""}
-                      onChange={(e) => setFormFields({ ...formFields, lastName: e.target.value })}
+                      onChange={(e) =>
+                        setFormFields({
+                          ...formFields,
+                          lastName: e.target.value,
+                        })
+                      }
                       className="mt-1 w-full bg-gray-50 border border-gray-300 rounded-lg p-2 text-xs focus:ring-teal-500"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-[10px] font-bold text-gray-500 uppercase">Department</label>
+                    <label className="block text-[10px] font-bold text-gray-500 uppercase">
+                      Department
+                    </label>
                     <select
                       value={formFields.departmentId || ""}
-                      onChange={(e) => setFormFields({ ...formFields, departmentId: Number(e.target.value) })}
+                      onChange={(e) =>
+                        setFormFields({
+                          ...formFields,
+                          departmentId: Number(e.target.value),
+                        })
+                      }
                       className="mt-1 w-full bg-gray-50 border border-gray-300 rounded-lg p-2 text-xs focus:ring-teal-500"
                     >
-                      {departments.filter(d => d.isActive).map(d => (
-                        <option key={d.id} value={d.id}>{d.name}</option>
-                      ))}
+                      {departments
+                        .filter((d) => d.isActive)
+                        .map((d) => (
+                          <option key={d.id} value={d.id}>
+                            {d.name}
+                          </option>
+                        ))}
                     </select>
                   </div>
                   <div>
-                    <label className="block text-[10px] font-bold text-gray-500 uppercase">Employee Code</label>
+                    <label className="block text-[10px] font-bold text-gray-500 uppercase">
+                      Employee Code
+                    </label>
                     <input
-                      type="text" placeholder="e.g. REC102"
+                      type="text"
+                      placeholder="e.g. REC102"
                       value={formFields.employeeCode || ""}
-                      onChange={(e) => setFormFields({ ...formFields, employeeCode: e.target.value })}
+                      onChange={(e) =>
+                        setFormFields({
+                          ...formFields,
+                          employeeCode: e.target.value,
+                        })
+                      }
                       className="mt-1 w-full bg-gray-50 border border-gray-300 rounded-lg p-2 text-xs focus:ring-teal-500"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-[10px] font-bold text-gray-500 uppercase">Shift Schedule</label>
+                    <label className="block text-[10px] font-bold text-gray-500 uppercase">
+                      Shift Schedule
+                    </label>
                     <select
                       value={formFields.shift || "Morning"}
-                      onChange={(e) => setFormFields({ ...formFields, shift: e.target.value })}
+                      onChange={(e) =>
+                        setFormFields({ ...formFields, shift: e.target.value })
+                      }
                       className="mt-1 w-full bg-gray-50 border border-gray-300 rounded-lg p-2 text-xs focus:ring-teal-500"
                     >
                       <option value="Morning">Morning</option>
@@ -866,21 +1231,32 @@ export default function AdminDashboard() {
                     </select>
                   </div>
                   <div>
-                    <label className="block text-[10px] font-bold text-gray-500 uppercase">Phone Number</label>
+                    <label className="block text-[10px] font-bold text-gray-500 uppercase">
+                      Phone Number
+                    </label>
                     <input
                       type="text"
                       value={formFields.phone || ""}
-                      onChange={(e) => setFormFields({ ...formFields, phone: e.target.value })}
+                      onChange={(e) =>
+                        setFormFields({ ...formFields, phone: e.target.value })
+                      }
                       className="mt-1 w-full bg-gray-50 border border-gray-300 rounded-lg p-2 text-xs focus:ring-teal-500"
                     />
                   </div>
 
                   <div className="col-span-2">
-                    <label className="block text-[10px] font-bold text-gray-500 uppercase">Joined Date</label>
+                    <label className="block text-[10px] font-bold text-gray-500 uppercase">
+                      Joined Date
+                    </label>
                     <input
                       type="date"
                       value={formFields.joinedDate || ""}
-                      onChange={(e) => setFormFields({ ...formFields, joinedDate: e.target.value })}
+                      onChange={(e) =>
+                        setFormFields({
+                          ...formFields,
+                          joinedDate: e.target.value,
+                        })
+                      }
                       className="mt-1 w-full bg-gray-50 border border-gray-300 rounded-lg p-2 text-xs focus:ring-teal-500"
                     />
                   </div>
@@ -893,25 +1269,48 @@ export default function AdminDashboard() {
               <>
                 {modal.action === "create" && (
                   <div className="bg-teal-50/50 p-3 rounded-lg border border-teal-100/50 space-y-3">
-                    <p className="text-xs font-bold text-teal-700 uppercase">1. User Credentials</p>
+                    <p className="text-xs font-bold text-teal-700 uppercase">
+                      1. User Credentials
+                    </p>
                     <div className="grid grid-cols-2 gap-3">
                       <input
-                        type="email" required placeholder="Email address"
+                        type="email"
+                        required
+                        placeholder="Email address"
                         value={formFields.email || ""}
-                        onChange={(e) => setFormFields({ ...formFields, email: e.target.value })}
+                        onChange={(e) =>
+                          setFormFields({
+                            ...formFields,
+                            email: e.target.value,
+                          })
+                        }
                         className="w-full bg-white border border-gray-300 rounded-lg p-2 text-xs focus:ring-teal-500 outline-none"
                       />
                       <div className="flex gap-2">
                         <input
-                          type="password" required placeholder="Password"
+                          type="password"
+                          required
+                          placeholder="Password"
                           value={formFields.password || ""}
-                          onChange={(e) => setFormFields({ ...formFields, password: e.target.value })}
+                          onChange={(e) =>
+                            setFormFields({
+                              ...formFields,
+                              password: e.target.value,
+                            })
+                          }
                           className="w-full bg-white border border-gray-300 rounded-lg p-2 text-xs focus:ring-teal-500"
                         />
                         <input
-                          type="password" required placeholder="Confirm"
+                          type="password"
+                          required
+                          placeholder="Confirm"
                           value={formFields.confirmPassword || ""}
-                          onChange={(e) => setFormFields({ ...formFields, confirmPassword: e.target.value })}
+                          onChange={(e) =>
+                            setFormFields({
+                              ...formFields,
+                              confirmPassword: e.target.value,
+                            })
+                          }
                           className="w-full bg-white border border-gray-300 rounded-lg p-2 text-xs focus:ring-teal-500"
                         />
                       </div>
@@ -919,42 +1318,71 @@ export default function AdminDashboard() {
                   </div>
                 )}
 
-                <p className="text-xs font-bold text-gray-600 uppercase border-b border-gray-100 pb-1">2. Demographics & Profile</p>
-                
+                <p className="text-xs font-bold text-gray-600 uppercase border-b border-gray-100 pb-1">
+                  2. Demographics & Profile
+                </p>
+
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-[10px] font-bold text-gray-500 uppercase">First Name</label>
+                    <label className="block text-[10px] font-bold text-gray-500 uppercase">
+                      First Name
+                    </label>
                     <input
-                      type="text" required
+                      type="text"
+                      required
                       value={formFields.firstName || ""}
-                      onChange={(e) => setFormFields({ ...formFields, firstName: e.target.value })}
+                      onChange={(e) =>
+                        setFormFields({
+                          ...formFields,
+                          firstName: e.target.value,
+                        })
+                      }
                       className="mt-1 w-full bg-gray-50 border border-gray-300 rounded-lg p-2 text-xs focus:ring-teal-500"
                     />
                   </div>
                   <div>
-                    <label className="block text-[10px] font-bold text-gray-500 uppercase">Last Name</label>
+                    <label className="block text-[10px] font-bold text-gray-500 uppercase">
+                      Last Name
+                    </label>
                     <input
-                      type="text" required
+                      type="text"
+                      required
                       value={formFields.lastName || ""}
-                      onChange={(e) => setFormFields({ ...formFields, lastName: e.target.value })}
+                      onChange={(e) =>
+                        setFormFields({
+                          ...formFields,
+                          lastName: e.target.value,
+                        })
+                      }
                       className="mt-1 w-full bg-gray-50 border border-gray-300 rounded-lg p-2 text-xs focus:ring-teal-500"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-[10px] font-bold text-gray-500 uppercase">Date of Birth</label>
+                    <label className="block text-[10px] font-bold text-gray-500 uppercase">
+                      Date of Birth
+                    </label>
                     <input
                       type="date"
                       value={formFields.dateOfBirth || ""}
-                      onChange={(e) => setFormFields({ ...formFields, dateOfBirth: e.target.value })}
+                      onChange={(e) =>
+                        setFormFields({
+                          ...formFields,
+                          dateOfBirth: e.target.value,
+                        })
+                      }
                       className="mt-1 w-full bg-gray-50 border border-gray-300 rounded-lg p-2 text-xs focus:ring-teal-500"
                     />
                   </div>
                   <div>
-                    <label className="block text-[10px] font-bold text-gray-500 uppercase">Gender</label>
+                    <label className="block text-[10px] font-bold text-gray-500 uppercase">
+                      Gender
+                    </label>
                     <select
                       value={formFields.gender || "male"}
-                      onChange={(e) => setFormFields({ ...formFields, gender: e.target.value })}
+                      onChange={(e) =>
+                        setFormFields({ ...formFields, gender: e.target.value })
+                      }
                       className="mt-1 w-full bg-gray-50 border border-gray-300 rounded-lg p-2 text-xs focus:ring-teal-500"
                     >
                       <option value="male">Male</option>
@@ -964,33 +1392,54 @@ export default function AdminDashboard() {
                   </div>
 
                   <div>
-                    <label className="block text-[10px] font-bold text-gray-500 uppercase">Blood Group</label>
+                    <label className="block text-[10px] font-bold text-gray-500 uppercase">
+                      Blood Group
+                    </label>
                     <select
                       value={formFields.bloodGroup || "O+"}
-                      onChange={(e) => setFormFields({ ...formFields, bloodGroup: e.target.value })}
+                      onChange={(e) =>
+                        setFormFields({
+                          ...formFields,
+                          bloodGroup: e.target.value,
+                        })
+                      }
                       className="mt-1 w-full bg-gray-50 border border-gray-300 rounded-lg p-2 text-xs focus:ring-teal-500"
                     >
-                      {["A+", "A-", "B+", "B-", "O+", "O-", "AB+", "AB-"].map(bg => (
-                        <option key={bg} value={bg}>{bg}</option>
-                      ))}
+                      {["A+", "A-", "B+", "B-", "O+", "O-", "AB+", "AB-"].map(
+                        (bg) => (
+                          <option key={bg} value={bg}>
+                            {bg}
+                          </option>
+                        ),
+                      )}
                     </select>
                   </div>
-                 
 
                   <div>
-                    <label className="block text-[10px] font-bold text-gray-500 uppercase">Phone Number</label>
+                    <label className="block text-[10px] font-bold text-gray-500 uppercase">
+                      Phone Number
+                    </label>
                     <input
                       type="text"
                       value={formFields.phone || ""}
-                      onChange={(e) => setFormFields({ ...formFields, phone: e.target.value })}
+                      onChange={(e) =>
+                        setFormFields({ ...formFields, phone: e.target.value })
+                      }
                       className="mt-1 w-full bg-gray-50 border border-gray-300 rounded-lg p-2 text-xs focus:ring-teal-500"
                     />
                   </div>
                   <div>
-                    <label className="block text-[10px] font-bold text-gray-500 uppercase">Marital Status</label>
+                    <label className="block text-[10px] font-bold text-gray-500 uppercase">
+                      Marital Status
+                    </label>
                     <select
                       value={formFields.maritalStatus || "single"}
-                      onChange={(e) => setFormFields({ ...formFields, maritalStatus: e.target.value })}
+                      onChange={(e) =>
+                        setFormFields({
+                          ...formFields,
+                          maritalStatus: e.target.value,
+                        })
+                      }
                       className="mt-1 w-full bg-gray-50 border border-gray-300 rounded-lg p-2 text-xs focus:ring-teal-500"
                     >
                       <option value="single">Single</option>
@@ -1001,20 +1450,31 @@ export default function AdminDashboard() {
                   </div>
 
                   <div>
-                    <label className="block text-[10px] font-bold text-gray-500 uppercase">City</label>
+                    <label className="block text-[10px] font-bold text-gray-500 uppercase">
+                      City
+                    </label>
                     <input
                       type="text"
                       value={formFields.city || ""}
-                      onChange={(e) => setFormFields({ ...formFields, city: e.target.value })}
+                      onChange={(e) =>
+                        setFormFields({ ...formFields, city: e.target.value })
+                      }
                       className="mt-1 w-full bg-gray-50 border border-gray-300 rounded-lg p-2 text-xs focus:ring-teal-500"
                     />
                   </div>
                   <div>
-                    <label className="block text-[10px] font-bold text-gray-500 uppercase">Full Address</label>
+                    <label className="block text-[10px] font-bold text-gray-500 uppercase">
+                      Full Address
+                    </label>
                     <input
                       type="text"
                       value={formFields.address || ""}
-                      onChange={(e) => setFormFields({ ...formFields, address: e.target.value })}
+                      onChange={(e) =>
+                        setFormFields({
+                          ...formFields,
+                          address: e.target.value,
+                        })
+                      }
                       className="mt-1 w-full bg-gray-50 border border-gray-300 rounded-lg p-2 text-xs focus:ring-teal-500"
                     />
                   </div>
@@ -1022,51 +1482,91 @@ export default function AdminDashboard() {
 
                 <div className="grid grid-cols-2 gap-3 pt-2">
                   <div>
-                    <label className="block text-[10px] font-bold text-gray-500 uppercase">Allergies</label>
+                    <label className="block text-[10px] font-bold text-gray-500 uppercase">
+                      Allergies
+                    </label>
                     <textarea
-                      rows="2" placeholder="Penicillin, Peanuts, etc."
+                      rows="2"
+                      placeholder="Penicillin, Peanuts, etc."
                       value={formFields.allergies || ""}
-                      onChange={(e) => setFormFields({ ...formFields, allergies: e.target.value })}
+                      onChange={(e) =>
+                        setFormFields({
+                          ...formFields,
+                          allergies: e.target.value,
+                        })
+                      }
                       className="mt-1 w-full bg-gray-50 border border-gray-300 rounded-lg p-2 text-xs focus:ring-teal-500"
                     />
                   </div>
                   <div>
-                    <label className="block text-[10px] font-bold text-gray-500 uppercase">Chronic Conditions</label>
+                    <label className="block text-[10px] font-bold text-gray-500 uppercase">
+                      Chronic Conditions
+                    </label>
                     <textarea
-                      rows="2" placeholder="Asthma, Diabetes, etc."
+                      rows="2"
+                      placeholder="Asthma, Diabetes, etc."
                       value={formFields.chronicConditions || ""}
-                      onChange={(e) => setFormFields({ ...formFields, chronicConditions: e.target.value })}
+                      onChange={(e) =>
+                        setFormFields({
+                          ...formFields,
+                          chronicConditions: e.target.value,
+                        })
+                      }
                       className="mt-1 w-full bg-gray-50 border border-gray-300 rounded-lg p-2 text-xs focus:ring-teal-500"
                     />
                   </div>
                 </div>
 
-                <p className="text-xs font-bold text-gray-600 uppercase border-b border-gray-100 pb-1 pt-2">3. Emergency Contact Details</p>
+                <p className="text-xs font-bold text-gray-600 uppercase border-b border-gray-100 pb-1 pt-2">
+                  3. Emergency Contact Details
+                </p>
                 <div className="grid grid-cols-3 gap-2">
                   <div>
-                    <label className="block text-[9px] font-bold text-gray-500 uppercase">Name</label>
+                    <label className="block text-[9px] font-bold text-gray-500 uppercase">
+                      Name
+                    </label>
                     <input
                       type="text"
                       value={formFields.emergencyContactName || ""}
-                      onChange={(e) => setFormFields({ ...formFields, emergencyContactName: e.target.value })}
+                      onChange={(e) =>
+                        setFormFields({
+                          ...formFields,
+                          emergencyContactName: e.target.value,
+                        })
+                      }
                       className="mt-1 w-full bg-gray-50 border border-gray-300 rounded-lg p-1.5 text-xs focus:ring-teal-500"
                     />
                   </div>
                   <div>
-                    <label className="block text-[9px] font-bold text-gray-500 uppercase">Phone</label>
+                    <label className="block text-[9px] font-bold text-gray-500 uppercase">
+                      Phone
+                    </label>
                     <input
                       type="text"
                       value={formFields.emergencyContactPhone || ""}
-                      onChange={(e) => setFormFields({ ...formFields, emergencyContactPhone: e.target.value })}
+                      onChange={(e) =>
+                        setFormFields({
+                          ...formFields,
+                          emergencyContactPhone: e.target.value,
+                        })
+                      }
                       className="mt-1 w-full bg-gray-50 border border-gray-300 rounded-lg p-1.5 text-xs focus:ring-teal-500"
                     />
                   </div>
                   <div>
-                    <label className="block text-[9px] font-bold text-gray-500 uppercase">Relation</label>
+                    <label className="block text-[9px] font-bold text-gray-500 uppercase">
+                      Relation
+                    </label>
                     <input
-                      type="text" placeholder="Spouse, Parent"
+                      type="text"
+                      placeholder="Spouse, Parent"
                       value={formFields.emergencyContactRelation || ""}
-                      onChange={(e) => setFormFields({ ...formFields, emergencyContactRelation: e.target.value })}
+                      onChange={(e) =>
+                        setFormFields({
+                          ...formFields,
+                          emergencyContactRelation: e.target.value,
+                        })
+                      }
                       className="mt-1 w-full bg-gray-50 border border-gray-300 rounded-lg p-1.5 text-xs focus:ring-teal-500"
                     />
                   </div>
@@ -1077,7 +1577,9 @@ export default function AdminDashboard() {
             <div className="flex justify-end gap-3 border-t border-gray-150 pt-4 mt-6">
               <button
                 type="button"
-                onClick={() => setModal({ show: false, type: "", action: "", data: null })}
+                onClick={() =>
+                  setModal({ show: false, type: "", action: "", data: null })
+                }
                 className="px-4 py-2 border border-gray-300 text-gray-700 text-sm font-semibold rounded-full hover:bg-gray-50 cursor-pointer"
               >
                 Cancel
@@ -1089,11 +1591,9 @@ export default function AdminDashboard() {
                 {modal.action === "create" ? "Save Account" : "Save Changes"}
               </button>
             </div>
-
           </form>
         )}
       </Modal>
-
     </div>
   );
 }

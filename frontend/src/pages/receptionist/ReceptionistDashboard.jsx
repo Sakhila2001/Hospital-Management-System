@@ -1,17 +1,12 @@
 import React, { useState } from "react";
 import { useAdmin } from "../../context/AdminContext";
 import Logo from "../../assets/images/logo.png";
-import { useNavigate } from "react-router-dom";
+//import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation, Outlet } from "react-router-dom";
 
 // Centralized components
 import Toast from "../../components/common/Toast";
 import Modal from "../../components/common/Modal";
-
-// Modular Sub-views
-import ReceptionistOverview from "./ReceptionistOverview";
-import ReceptionistAppointments from "./ReceptionistAppointments";
-import ReceptionistPatients from "./ReceptionistPatients";
-import ReceptionistProfile from "./ReceptionistProfile";
 
 import {
   HomeIcon,
@@ -27,7 +22,8 @@ export default function ReceptionistDashboard() {
   const navigate = useNavigate();
 
   // Active tab: "overview", "appointments", "patients", "profile"
-  const [activeTab, setActiveTab] = useState("overview");
+  const location = useLocation();
+  const activeTab = location.pathname.split("/")[2] || "overview";
 
   // Simulated logged-in receptionist: Alice Smith (userId = 201)
   const currentReceptionist =
@@ -97,7 +93,7 @@ export default function ReceptionistDashboard() {
 
             <nav className="p-4 space-y-1">
               <button
-                onClick={() => setActiveTab("overview")}
+                onClick={() => navigate("/receptionist/overview")}
                 className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all cursor-pointer ${
                   activeTab === "overview"
                     ? "bg-teal-55/70 text-teal-800 font-semibold"
@@ -109,7 +105,7 @@ export default function ReceptionistDashboard() {
               </button>
 
               <button
-                onClick={() => setActiveTab("appointments")}
+                onClick={() => navigate("/receptionist/appointments")}
                 className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all cursor-pointer ${
                   activeTab === "appointments"
                     ? "bg-teal-55/70 text-teal-800 font-semibold"
@@ -121,7 +117,7 @@ export default function ReceptionistDashboard() {
               </button>
 
               <button
-                onClick={() => setActiveTab("patients")}
+                onClick={() => navigate("/receptionist/patients")}
                 className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all cursor-pointer ${
                   activeTab === "patients"
                     ? "bg-teal-55/70 text-teal-800 font-semibold"
@@ -133,7 +129,7 @@ export default function ReceptionistDashboard() {
               </button>
 
               <button
-                onClick={() => setActiveTab("profile")}
+                onClick={() => navigate("/receptionist/profile")}
                 className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all cursor-pointer ${
                   activeTab === "profile"
                     ? "bg-teal-55/70 text-teal-800 font-semibold"
@@ -149,7 +145,7 @@ export default function ReceptionistDashboard() {
           {/* Profile footer with logout */}
           <div className="p-4 border-t border-gray-100 flex items-center justify-between">
             <button
-              onClick={() => setActiveTab("profile")}
+              onClick={() => navigate("/receptionist/profile")}
               className="flex items-center gap-2.5 cursor-pointer text-left"
               title="View my profile"
             >
@@ -188,7 +184,7 @@ export default function ReceptionistDashboard() {
             <div className="md:hidden flex gap-2">
               <select
                 value={activeTab}
-                onChange={(e) => setActiveTab(e.target.value)}
+                onChange={(e) => navigate(`/receptionist/${e.target.value}`)}
                 className="bg-gray-50 border border-gray-300 text-gray-900 text-xs rounded-lg p-1.5 focus:ring-teal-500"
               >
                 <option value="overview">Triage Queue</option>
@@ -212,35 +208,14 @@ export default function ReceptionistDashboard() {
           </header>
 
           <div className="p-6 space-y-6 max-w-5xl mx-auto w-full">
-            {activeTab === "overview" && (
-              <ReceptionistOverview
-                receptionist={currentReceptionist}
-                triggerToast={triggerToast}
-              />
-            )}
-
-            {activeTab === "appointments" && (
-              <ReceptionistAppointments
-                receptionist={currentReceptionist}
-                triggerToast={triggerToast}
-              />
-            )}
-
-            {activeTab === "patients" && (
-              <ReceptionistPatients
-                receptionist={currentReceptionist}
-                patientModal={patientModal}
-                setPatientModal={setPatientModal}
-                triggerToast={triggerToast}
-              />
-            )}
-
-            {activeTab === "profile" && (
-              <ReceptionistProfile
-                receptionist={currentReceptionist}
-                triggerToast={triggerToast}
-              />
-            )}
+            <Outlet
+              context={{
+                receptionist: currentReceptionist,
+                triggerToast,
+                patientModal,
+                setPatientModal,
+              }}
+            />
           </div>
         </main>
       </div>

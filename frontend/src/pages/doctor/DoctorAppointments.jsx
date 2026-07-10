@@ -4,7 +4,13 @@ import Card from "../../components/common/Card";
 import Badge from "../../components/common/Badge";
 import Button from "../../components/common/Button";
 import Modal from "../../components/common/Modal";
-import { MagnifyingGlassIcon, FunnelIcon } from "@heroicons/react/24/outline";
+import {
+  MagnifyingGlassIcon,
+  FunnelIcon,
+  DocumentTextIcon,
+  CheckCircleIcon,
+  XCircleIcon,
+} from "@heroicons/react/24/outline";
 
 const STATUS_FILTERS = [
   { value: "all", label: "All Statuses" },
@@ -39,6 +45,9 @@ export default function DoctorAppointments({ doctor, triggerToast }) {
 
   // Selected patient for medical record viewing
   const [selectedPatient, setSelectedPatient] = useState(null);
+
+  // Selected appointment for viewing full triage reason
+  const [selectedReasonApp, setSelectedReasonApp] = useState(null);
 
   // Filters
   const [statusFilter, setStatusFilter] = useState("all");
@@ -133,8 +142,17 @@ export default function DoctorAppointments({ doctor, triggerToast }) {
           </div>
         </div>
 
-        <div className="overflow-x-auto -mx-6">
-          <table className="w-full text-sm text-left text-gray-500 min-w-[700px]">
+        <div className="overflow-x-auto scrollbar-hide -mx-6">
+          <table className="w-full text-sm text-left text-gray-500 table-fixed min-w-[900px]">
+            <colgroup>
+              <col className="w-[16%]" />
+              <col className="w-[11%]" />
+              <col className="w-[9%]" />
+              <col className="w-[11%]" />
+              <col className="w-[22%]" />
+              <col className="w-[11%]" />
+              <col className="w-[20%]" />
+            </colgroup>
             <thead className="text-xs text-gray-700 bg-gray-50/75 border-b border-gray-150">
               <tr>
                 <th scope="col" className="px-6 py-3">
@@ -180,11 +198,21 @@ export default function DoctorAppointments({ doctor, triggerToast }) {
                   <td className="px-6 py-4 capitalize text-gray-550 font-semibold">
                     {app.type.replace("_", " ")}
                   </td>
-                  <td
-                    className="px-6 py-4 text-gray-500 font-medium max-w-xs truncate"
-                    title={app.appointmentReason}
-                  >
-                    {app.appointmentReason || "N/A"}
+                  <td className="px-6 py-4">
+                    {app.appointmentReason ? (
+                      <button
+                        onClick={() => setSelectedReasonApp(app)}
+                        className="flex items-center gap-1 text-gray-500 hover:text-teal-600 font-medium cursor-pointer w-full"
+                        title="Click to view full reason"
+                      >
+                        <DocumentTextIcon className="h-3.5 w-3.5 shrink-0" />
+                        <span className="truncate">
+                          {app.appointmentReason}
+                        </span>
+                      </button>
+                    ) : (
+                      <span className="text-gray-400 font-medium">N/A</span>
+                    )}
                   </td>
                   <td className="px-6 py-4 text-center">
                     <Badge
@@ -196,35 +224,66 @@ export default function DoctorAppointments({ doctor, triggerToast }) {
                             ? "success"
                             : app.status === "cancelled"
                               ? "danger"
-                              : "warning"
+                              : app.status === "no_show"
+                                ? "danger"
+                                : "warning"
                       }
                     />
                   </td>
-                  <td className="px-6 py-4 text-right flex items-center justify-end gap-2">
-                    {app.status === "confirmed" ? (
-                      <>
-                        <Button
-                          variant="primary"
+                  <td className="px-6 py-4 text-right">
+                    <div className="flex items-center justify-end gap-2">
+                      {app.status === "confirmed" && (
+                        <>
+                          <button
+                            onClick={() =>
+                              handleUpdateStatus(app.id, "completed")
+                            }
+                            className="p-1 text-teal-600 hover:bg-teal-50 rounded-lg border border-gray-100 cursor-pointer"
+                            title="Mark as completed"
+                          >
+                            <CheckCircleIcon className="h-5 w-5" />
+                          </button>
+                          <button
+                            onClick={() =>
+                              handleUpdateStatus(app.id, "no_show")
+                            }
+                            className="p-1 text-red-500 hover:bg-red-50 rounded-lg border border-gray-100 cursor-pointer"
+                            title="Mark as no-show"
+                          >
+                            <XCircleIcon className="h-5 w-5" />
+                          </button>
+                        </>
+                      )}
+
+                      {app.status === "completed" && (
+                        <button
+                          onClick={() => handleUpdateStatus(app.id, "no_show")}
+                          className="p-1 text-red-500 hover:bg-red-50 rounded-lg border border-gray-100 cursor-pointer"
+                          title="Change to no-show"
+                        >
+                          <XCircleIcon className="h-5 w-5" />
+                        </button>
+                      )}
+
+                      {app.status === "no_show" && (
+                        <button
                           onClick={() =>
                             handleUpdateStatus(app.id, "completed")
                           }
-                          className="w-full sm:w-auto flex items-center justify-center gap-2 rounded-full bg-teal-600 hover:bg-teal-500 text-white px-5 py-2.5 text-sm font-semibold shadow-xs transition-colors cursor-pointer"
+                          className="p-1 text-teal-600 hover:bg-teal-50 rounded-lg border border-gray-100 cursor-pointer"
+                          title="Change to completed"
                         >
-                          Complete
-                        </Button>
-                        <Button
-                          variant="outline"
-                          onClick={() => handleUpdateStatus(app.id, "no_show")}
-                          className="py-1 px-3 text-xs hover:border-red-200 hover:text-red-600"
-                        >
-                          No Show
-                        </Button>
-                      </>
-                    ) : (
-                      <span className="text-xs text-gray-400 font-medium">
-                        -
-                      </span>
-                    )}
+                          <CheckCircleIcon className="h-5 w-5" />
+                        </button>
+                      )}
+
+                      {(app.status === "pending" ||
+                        app.status === "cancelled") && (
+                        <span className="text-xs text-gray-400 font-medium">
+                          -
+                        </span>
+                      )}
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -244,6 +303,53 @@ export default function DoctorAppointments({ doctor, triggerToast }) {
           </table>
         </div>
       </Card>
+
+      {/* Triage Reason Modal */}
+      <Modal
+        isOpen={!!selectedReasonApp}
+        onClose={() => setSelectedReasonApp(null)}
+        badge="Triage Notes"
+        title={
+          selectedReasonApp
+            ? `${selectedReasonApp.patientName}`
+            : "Triage Reason"
+        }
+      >
+        {selectedReasonApp && (
+          <div className="space-y-4">
+            <div className="bg-gray-50 p-3 rounded-lg border border-gray-150 text-xs text-gray-600 space-y-1.5">
+              <p>
+                <b>Scheduled:</b> {selectedReasonApp.date} at{" "}
+                {selectedReasonApp.time}
+              </p>
+              <p>
+                <b>Triage Type:</b>{" "}
+                <span className="capitalize">
+                  {selectedReasonApp.type.replace("_", " ")}
+                </span>
+              </p>
+            </div>
+
+            <div>
+              <p className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-1.5">
+                Symptom Details / Medical Notes
+              </p>
+              <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap bg-white border border-gray-150 rounded-lg p-3">
+                {selectedReasonApp.appointmentReason}
+              </p>
+            </div>
+
+            <div className="flex justify-end pt-2 border-t border-gray-100">
+              <Button
+                variant="secondary"
+                onClick={() => setSelectedReasonApp(null)}
+              >
+                Close
+              </Button>
+            </div>
+          </div>
+        )}
+      </Modal>
 
       {/* Patient Clinical Background Record Modal */}
       <Modal

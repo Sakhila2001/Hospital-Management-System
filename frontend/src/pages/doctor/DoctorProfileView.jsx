@@ -36,7 +36,10 @@ function formatTime(timeStr) {
   const [h, m] = timeStr.split(":");
   const d = new Date();
   d.setHours(Number(h), Number(m || 0));
-  return d.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
+  return d.toLocaleTimeString(undefined, {
+    hour: "numeric",
+    minute: "2-digit",
+  });
 }
 
 export default function DoctorProfileView({ doctor, onEdit }) {
@@ -70,7 +73,10 @@ export default function DoctorProfileView({ doctor, onEdit }) {
               value={`Dr. ${doctor.firstName || ""} ${doctor.lastName || ""}`.trim()}
             />
             <Field label="Gender" value={doctor.gender} />
-            <Field label="Date of Birth" value={formatDate(doctor.dateOfBirth)} />
+            <Field
+              label="Date of Birth"
+              value={formatDate(doctor.dateOfBirth)}
+            />
             <Field label="Phone" value={doctor.phone} icon={PhoneIcon} />
             <Field label="Address" value={doctor.address} />
             <div>
@@ -93,13 +99,17 @@ export default function DoctorProfileView({ doctor, onEdit }) {
             <Field
               label="Experience"
               value={
-                doctor.experienceYears !== undefined && doctor.experienceYears !== null
+                doctor.experienceYears !== undefined &&
+                doctor.experienceYears !== null
                   ? `${doctor.experienceYears} yrs`
                   : null
               }
             />
             <Field label="License Number" value={doctor.licenseNumber} />
-            <Field label="Department" value={doctor.departmentName || doctor.Department?.name} />
+            <Field
+              label="Department"
+              value={doctor.departmentName || doctor.Department?.name}
+            />
           </div>
           {doctor.bio && (
             <div className="mt-5 pt-4 border-t border-gray-100">
@@ -136,8 +146,14 @@ export default function DoctorProfileView({ doctor, onEdit }) {
               )}
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-5">
-              <Field label="Available From" value={formatTime(doctor.availableTimeStart)} />
-              <Field label="Available Until" value={formatTime(doctor.availableTimeEnd)} />
+              <Field
+                label="Available From"
+                value={formatTime(doctor.availableTimeStart)}
+              />
+              <Field
+                label="Available Until"
+                value={formatTime(doctor.availableTimeEnd)}
+              />
             </div>
           </div>
         </SectionCard>
@@ -167,7 +183,9 @@ function Field({ label, value, icon: Icon = null }) {
         {label}
       </p>
       <div className="flex items-center gap-1.5 text-sm font-medium text-gray-800">
-        {Icon && value && <Icon className="h-3.5 w-3.5 text-gray-400 shrink-0" />}
+        {Icon && value && (
+          <Icon className="h-3.5 w-3.5 text-gray-400 shrink-0" />
+        )}
         {value ? (
           <span className="capitalize">{value}</span>
         ) : (

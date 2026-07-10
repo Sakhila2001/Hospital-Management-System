@@ -5,12 +5,14 @@ import Button from "../../components/common/Button";
 import Input from "../../components/common/Input";
 import Modal from "../../components/common/Modal";
 import PatientProfileView from "./PatientProfileView";
+import { useOutletContext } from "react-router-dom";
 
 const GENDER_OPTIONS = ["Male", "Female", "Other"];
 const BLOOD_GROUP_OPTIONS = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
 const MARITAL_STATUS_OPTIONS = ["Single", "Married", "Divorced", "Widowed"];
 
-export default function PatientProfile({ patient, triggerToast }) {
+export default function PatientProfile() {
+  const { patient, triggerToast } = useOutletContext();
   const { updatePatient } = useAdmin();
 
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);

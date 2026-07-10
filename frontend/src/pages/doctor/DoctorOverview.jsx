@@ -2,8 +2,10 @@ import React from "react";
 import { useAdmin } from "../../context/AdminContext";
 import Card from "../../components/common/Card";
 import { CalendarIcon, CheckCircleIcon, PlayIcon } from "@heroicons/react/24/outline";
-
-export default function DoctorOverview({ doctor, setActiveTab, triggerToast }) {
+import { useNavigate, useOutletContext } from "react-router-dom";
+export default function DoctorOverview() {
+  const { doctor, triggerToast } = useOutletContext();
+  const navigate = useNavigate();
   const { appointments, toggleDoctorAvailability } = useAdmin();
 
   // Filter appointments assigned to this doctor

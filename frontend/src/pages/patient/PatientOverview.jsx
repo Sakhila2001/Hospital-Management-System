@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { useAdmin } from "../../context/AdminContext";
+import { useOutletContext } from "react-router-dom";
 import Card from "../../components/common/Card";
 import Badge from "../../components/common/Badge";
 import Button from "../../components/common/Button";
@@ -11,11 +12,8 @@ import {
   ExclamationTriangleIcon,
 } from "@heroicons/react/24/outline";
 
-export default function PatientOverview({
-  patient,
-  setActiveTab,
-  triggerToast,
-}) {
+export default function PatientOverview() {
+  const { patient, triggerToast } = useOutletContext();
   const { appointments, updateAppointmentStatus } = useAdmin();
 
   // Filter appointments for current patient

@@ -5,11 +5,13 @@ import Button from "../../components/common/Button";
 import Input from "../../components/common/Input";
 import Modal from "../../components/common/Modal";
 import DoctorProfileView from "./DoctorProfileView";
+import { useOutletContext } from "react-router-dom";
 
 const GENDER_OPTIONS = ["Male", "Female", "Other"];
 const DAY_OPTIONS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
-export default function DoctorProfile({ doctor, triggerToast }) {
+export default function DoctorProfile() {
+    const { doctor, triggerToast } = useOutletContext();
   const { updateDoctor, departments = [] } = useAdmin();
 
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);

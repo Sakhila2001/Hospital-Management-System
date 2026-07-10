@@ -1,8 +1,13 @@
 import React, { useState } from "react";
+import { useOutletContext } from "react-router-dom";
 import { useAdmin } from "../../context/AdminContext";
 import { PlusIcon, PencilIcon, TrashIcon, EyeIcon, MagnifyingGlassIcon } from "@heroicons/react/24/outline";
 
-export default function Doctors({ onOpenCreateModal, onOpenEditModal, onOpenViewModal, triggerToast }) {
+export default function Doctors() {
+  const { onOpenCreateModal, onOpenEditModal, onOpenViewModal, triggerToast } =
+    useOutletContext();
+    
+  
   const { doctors, departments, deleteDoctor } = useAdmin();
   const [searchTerm, setSearchTerm] = useState("");
 

@@ -1,8 +1,11 @@
 import React, { useState } from "react";
+import { useOutletContext } from "react-router-dom";
 import { useAdmin } from "../../context/AdminContext";
 import { PlusIcon, PencilIcon, TrashIcon, MagnifyingGlassIcon } from "@heroicons/react/24/outline";
 
-export default function Receptionists({ onOpenCreateModal, onOpenEditModal, triggerToast }) {
+export default function Receptionists() {
+  const { onOpenCreateModal, onOpenEditModal, triggerToast } =
+    useOutletContext();
   const { receptionists, departments, deleteReceptionist } = useAdmin();
   const [searchTerm, setSearchTerm] = useState("");
 

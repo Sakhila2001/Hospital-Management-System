@@ -5,6 +5,7 @@ import Badge from "../../components/common/Badge";
 import Button from "../../components/common/Button";
 import Modal from "../../components/common/Modal";
 import { ClockIcon, CalendarDaysIcon } from "@heroicons/react/24/outline";
+import { useOutletContext } from "react-router-dom";
 
 const WEEK_DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
@@ -27,7 +28,8 @@ function getNext7Days() {
   return days;
 }
 
-export default function DoctorSchedule({ doctor, triggerToast }) {
+export default function DoctorSchedule() {
+    const { doctor, triggerToast } = useOutletContext();
   const { appointments, patients } = useAdmin();
 
   const doctorApps = appointments.filter((app) => app.doctorId === 101 || app.doctorId === 1);
