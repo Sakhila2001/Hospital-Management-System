@@ -1,5 +1,5 @@
-import { useState } from "react";
 import "./App.css";
+import ProtectedRoute from "./components/ProtectedRoute";
 
 import { Route, Routes, Navigate } from "react-router-dom";
 import LandingPage from "./components/LandingPage";
@@ -46,7 +46,14 @@ function App() {
         <Route path="/register" element={<Register />} />
         <Route path="/register/staff" element={<StaffRegister />} />
         {/* Admin sub-views */}
-        <Route path="/admin" element={<AdminDashboard />}>
+        <Route
+          path="/admin"
+          element={
+            <ProtectedRoute allowedRoles={["admin"]}>
+              <AdminDashboard />
+            </ProtectedRoute>
+          }
+        >
           <Route index element={<Navigate to="overview" replace />} />
           <Route path="overview" element={<Overview />} />
           <Route path="appointments" element={<Appointments />} />
@@ -57,7 +64,14 @@ function App() {
         </Route>
         <Route path="/user/appointment" element={<BookingWidget />} />
         {/* Doctor sub-views */}
-        <Route path="/doctor" element={<DoctorDashboard />}>
+        <Route
+          path="/doctor"
+          element={
+            <ProtectedRoute allowedRoles={["doctor"]}>
+              <DoctorDashboard />
+            </ProtectedRoute>
+          }
+        >
           <Route index element={<Navigate to="overview" replace />} />
           <Route path="overview" element={<DoctorOverview />} />
           <Route path="appointments" element={<DoctorAppointments />} />
@@ -65,7 +79,14 @@ function App() {
           <Route path="profile" element={<DoctorProfile />} />
         </Route>
 
-        <Route path="receptionist/*" element={<ReceptionistDashboard />}>
+        <Route
+          path="receptionist/*"
+          element={
+            <ProtectedRoute allowedRoles={["receptionist"]}>
+              <ReceptionistDashboard />
+            </ProtectedRoute>
+          }
+        >
           <Route index element={<Navigate to="overview" replace />} />
           <Route path="overview" element={<ReceptionistOverview />} />
           <Route path="appointments" element={<ReceptionistAppointments />} />
@@ -73,7 +94,14 @@ function App() {
           <Route path="profile" element={<ReceptionistProfile />} />
         </Route>
         {/* Patient sub-views */}
-        <Route path="/patient" element={<PatientDashboard />}>
+        <Route
+          path="/patient"
+          element={
+            <ProtectedRoute allowedRoles={["patient"]}>
+              <PatientDashboard />
+            </ProtectedRoute>
+          }
+        >
           <Route index element={<Navigate to="overview" replace />} />
           <Route path="overview" element={<PatientOverview />} />
           <Route path="book" element={<PatientBookAppointment />} />

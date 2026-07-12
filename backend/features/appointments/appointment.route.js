@@ -5,6 +5,7 @@ import {
   getAppointmentById,
   updateAppointmentStatus,
   deleteAppointment,
+  assignDoctorAndDepartment,
 } from "./appointment.controller.js";
 import {
   authMiddleware,

@@ -1,5 +1,7 @@
 import "dotenv/config";
 import express from "express";
+import cors from "cors";
+import cookieParser from "cookie-parser";
 
 import { connectionDB } from "./config/index.js";
 import authRouter from "./features/auth/auth.routes.js";
@@ -11,7 +13,13 @@ import userRouter from "./features/users/user.routes.js";
 import appointmentRouter from "./features/appointments/appointment.route.js";
 
 const app = express();
-
+app.use(
+  cors({
+    origin: "http://localhost:5173",
+    credentials: true,
+  }),
+);
+app.use(cookieParser());
 app.use(express.json());
 
 await connectionDB();

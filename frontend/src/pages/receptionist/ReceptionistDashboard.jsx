@@ -1,5 +1,7 @@
 import React, { useState } from "react";
 import { useAdmin } from "../../context/AdminContext";
+import { useAuth } from "../../context/AuthContext";
+import api from "../../api/axios";
 import Logo from "../../assets/images/logo.png";
 //import { useNavigate } from "react-router-dom";
 import { useNavigate, useLocation, Outlet } from "react-router-dom";
@@ -19,6 +21,7 @@ import {
 
 export default function ReceptionistDashboard() {
   const { receptionists, departments } = useAdmin();
+  const { logout } = useAuth();
   const navigate = useNavigate();
 
   // Active tab: "overview", "appointments", "patients", "profile"
@@ -52,10 +55,19 @@ export default function ReceptionistDashboard() {
     return dept ? dept.name : "General Desk";
   };
 
-  const handleLogout = () => {
-    if (window.confirm("Are you sure you want to log out?")) {
-      navigate("/");
+  const handleLogout = async () => {
+    if (!window.confirm("Are you sure you want to log out from the portal?")) {
+      return;
     }
+
+    try {
+      await api.post("/auth/logout");
+    } catch (err) {
+      console.error("Logout request failed:", err);
+    }
+
+    logout(); // clears user + accessToken from AuthContext
+    navigate("/login");
   };
 
   const TAB_TITLES = {

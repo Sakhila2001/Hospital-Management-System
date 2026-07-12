@@ -1,3 +1,4 @@
+import User from "../users/user.model.js";
 import {
   loginService,
   logoutService,
@@ -73,5 +74,20 @@ export const refreshTokenManager = async (req, res, next) => {
     res.status(200).json({ data: result });
   } catch (err) {
     next(err);
+  }
+};
+export const getCurrentUser = async (req, res) => {
+  try {
+    // req.user comes from authMiddleware (decoded JWT: { id, roles })
+    const user = await User.findByPk(req.user.id);
+    if (!user) {
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found" });
+    }
+    const { password: _p, refreshToken: _r, ...safeUser } = user.toJSON();
+    return res.status(200).json({ success: true, data: { user: safeUser } });
+  } catch (error) {
+    return res.status(400).json({ success: false, message: error.message });
   }
 };

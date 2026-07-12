@@ -1,6 +1,8 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import Logo from "../../assets/images/logo.png";
+import { useAuth } from "../../context/AuthContext";
+import api from "../../api/axios";
 
 export default function Login() {
   const [formData, setFormData] = useState({
@@ -13,8 +15,9 @@ export default function Login() {
   const handleChange = (e) => {
     setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   };
+  const { login } = useAuth();
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
 
@@ -23,31 +26,47 @@ export default function Login() {
       return;
     }
 
-    // Since this is frontend-only, we mock a successful patient login:
-    // If the email is "admin@citycare.com", we redirect to admin panel! That is extremely smart!
-    // Otherwise, we redirect to patient home or show a mock success message.
-    console.log("Login payload:", formData);
-    if (formData.email.toLowerCase() === "admin@citycare.com") {
-      navigate("/admin");
-    } else {
-      navigate("/");
+    try {
+      const res = await api.post("/auth/login", formData);
+      const { user, accessToken } = res.data.data;
+
+      login(user, accessToken);
+
+      const roleRoutes = {
+        admin: "/admin",
+        doctor: "/doctor",
+        receptionist: "/receptionist",
+        patient: "/patient",
+      };
+      navigate(roleRoutes[user.roles] || "/");
+    } catch (err) {
+      setError(
+        err.response?.data?.message || "Login failed. Please try again.",
+      );
     }
   };
 
   return (
     <div className="flex min-h-screen w-full bg-gray-50">
-      
       {/* Left Column - Branding Card (Hidden on Mobile) */}
       <div className="hidden md:flex md:w-1/2 bg-gradient-to-br from-teal-600 to-teal-800 text-white flex-col justify-between p-12 relative overflow-hidden">
         {/* Soft background shape */}
         <div className="absolute -bottom-20 -left-20 w-96 h-96 rounded-full bg-white/5 blur-3xl" />
-        
+
         {/* Header Logo */}
         <div className="flex items-center gap-3 relative z-10">
-          <img src={Logo} alt="Logo" className="h-10 w-auto brightness-200 invert" />
+          <img
+            src={Logo}
+            alt="Logo"
+            className="h-10 w-auto brightness-200 invert"
+          />
           <div>
-            <h1 className="text-sm font-bold uppercase tracking-widest leading-none">City Care</h1>
-            <span className="text-[10px] text-teal-200 font-semibold uppercase tracking-wider">Patient Portal</span>
+            <h1 className="text-sm font-bold uppercase tracking-widest leading-none">
+              City Care
+            </h1>
+            <span className="text-[10px] text-teal-200 font-semibold uppercase tracking-wider">
+              Patient Portal
+            </span>
           </div>
         </div>
 
@@ -60,7 +79,9 @@ export default function Login() {
             Your Health Portal, Managed Online.
           </h2>
           <p className="text-sm text-teal-100/90 leading-relaxed">
-            Log in to manage your appointments, request prescription renewals, consult with specialists online, and download your clinical pathology reports.
+            Log in to manage your appointments, request prescription renewals,
+            consult with specialists online, and download your clinical
+            pathology reports.
           </p>
 
           <div className="pt-4 space-y-3 text-sm text-teal-150">
@@ -82,7 +103,10 @@ export default function Login() {
         {/* Footer info link */}
         <div className="text-xs text-teal-200/80 relative z-10">
           Are you a hospital employee?{" "}
-          <Link to="/register/staff" className="text-white font-bold hover:underline">
+          <Link
+            to="/register/staff"
+            className="text-white font-bold hover:underline"
+          >
             Staff Access Portal &rarr;
           </Link>
         </div>
@@ -91,7 +115,6 @@ export default function Login() {
       {/* Right Column - Sign-in Form (Full Width on Mobile) */}
       <div className="w-full md:w-1/2 flex items-center justify-center p-8 bg-white">
         <div className="w-full max-w-sm space-y-6">
-          
           {/* Header titles */}
           <div className="space-y-2 text-left">
             <span className="inline-block rounded-full bg-teal-50 px-3.5 py-1 text-xs font-semibold tracking-wide text-teal-600 uppercase">
@@ -113,10 +136,11 @@ export default function Login() {
 
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-4">
-            
             {/* Email Address */}
             <div>
-              <label className="block text-[10px] font-bold text-gray-500 uppercase">Email Address</label>
+              <label className="block text-[10px] font-bold text-gray-500 uppercase">
+                Email Address
+              </label>
               <input
                 type="email"
                 name="email"
@@ -130,7 +154,9 @@ export default function Login() {
 
             {/* Password */}
             <div>
-              <label className="block text-[10px] font-bold text-gray-500 uppercase">Password</label>
+              <label className="block text-[10px] font-bold text-gray-500 uppercase">
+                Password
+              </label>
               <input
                 type="password"
                 name="password"
@@ -145,10 +171,15 @@ export default function Login() {
             {/* Remember me & Forgot Pass */}
             <div className="flex items-center justify-between text-xs text-gray-500 font-medium">
               <label className="flex items-center gap-1.5 cursor-pointer">
-                <input type="checkbox" className="h-4 w-4 rounded-sm border-gray-300 text-teal-650" />
+                <input
+                  type="checkbox"
+                  className="h-4 w-4 rounded-sm border-gray-300 text-teal-650"
+                />
                 Remember me
               </label>
-              <a href="#" className="hover:underline text-teal-600">Forgot password?</a>
+              <a href="#" className="hover:underline text-teal-600">
+                Forgot password?
+              </a>
             </div>
 
             <button
@@ -162,19 +193,20 @@ export default function Login() {
           {/* Redirection link */}
           <p className="text-gray-500 text-xs text-center">
             Don’t have an account?{" "}
-            <Link to="/register" className="text-teal-600 font-bold hover:underline">
+            <Link
+              to="/register"
+              className="text-teal-600 font-bold hover:underline"
+            >
               Create account
             </Link>
           </p>
 
           {/* Quick Admin Access Hint */}
-          <div className="bg-gray-50 p-3 rounded-lg border border-gray-200 text-[10px] text-gray-500 text-center leading-normal">
+          {/* <div className="bg-gray-50 p-3 rounded-lg border border-gray-200 text-[10px] text-gray-500 text-center leading-normal">
             <b>Prototype Access:</b> To enter the administrative dashboard directly, you can log in using <b>admin@citycare.com</b>.
-          </div>
-
+          </div> */}
         </div>
       </div>
-
     </div>
   );
 }

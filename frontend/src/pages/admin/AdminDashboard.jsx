@@ -1,5 +1,7 @@
 import React, { useState } from "react";
 import { useAdmin } from "../../context/AdminContext";
+import { useAuth } from "../../context/AuthContext";
+import api from "../../api/axios";
 import Logo from "../../assets/images/logo.png";
 import { useNavigate, useLocation, Outlet } from "react-router-dom";
 // Reusable Components
@@ -33,7 +35,7 @@ export default function AdminDashboard() {
     markAllNotificationsAsRead,
     clearAllNotifications,
   } = useAdmin();
-
+  const { logout } = useAuth();
   const navigate = useNavigate();
 
   // Tab State: "overview", "appointments", "departments", "doctors", "receptionists", "patients"
@@ -233,10 +235,19 @@ export default function AdminDashboard() {
     return dept ? dept.name : "N/A";
   };
 
-  const handleLogout = () => {
-    if (window.confirm("Are you sure you want to log out from the portal?")) {
-      navigate("/");
+  const handleLogout = async () => {
+    if (!window.confirm("Are you sure you want to log out from the portal?")) {
+      return;
     }
+
+    try {
+      await api.post("/auth/logout"); // hits backend: clears refreshToken in DB + clears cookie
+    } catch (err) {
+      console.error("Logout request failed:", err); // non-blocking — still log out client-side below
+    }
+
+    logout(); // clears user + accessToken from AuthContext
+    navigate("/login"); // also changed from "/" to "/login", since "/" isn't a real logged-out landing page for this flow
   };
 
   const outletContext = {

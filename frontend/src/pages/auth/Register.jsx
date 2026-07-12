@@ -1,6 +1,8 @@
 import { useState } from "react";
 import Logo from "../../assets/images/logo.png";
 import { Link, useNavigate } from "react-router-dom";
+import { EyeIcon, EyeSlashIcon } from "@heroicons/react/24/outline";
+import axios from "axios";
 
 export default function Register() {
   const [formData, setFormData] = useState({
@@ -11,24 +13,52 @@ export default function Register() {
     confirmPassword: "",
   });
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const navigate = useNavigate();
 
   const handleChange = (e) => {
     setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
+    setSuccess("");
 
     if (formData.password !== formData.confirmPassword) {
       setError("Passwords do not match");
       return;
     }
 
-    console.log("Register payload:", formData);
-    // Mock patient registration and redirect to login
-    navigate("/login");
+    try {
+      const res = await axios.post(
+        "http://localhost:5900/api/auth/register",
+        {
+          firstName: formData.firstName,
+          lastName: formData.lastName,
+          email: formData.email,
+          password: formData.password,
+          confirmPassword: formData.confirmPassword,
+          roles: "patient",
+        },
+        { withCredentials: true },
+      );
+
+      setSuccess(res.data.message); // 👈 use backend's message, e.g. "User created successfully"
+      setFormData({
+        email: "",
+        firstName: "",
+        lastName: "",
+        password: "",
+        confirmPassword: "",
+      });
+    } catch (err) {
+      setError(
+        err.response?.data?.message || "Registration failed. Please try again.",
+      );
+    }
   };
 
   return (
@@ -116,6 +146,12 @@ export default function Register() {
             </div>
           )}
 
+          {success && (
+            <div className="p-3 bg-green-50 border border-green-200 text-green-700 rounded-lg text-xs font-semibold">
+              {success}
+            </div>
+          )}
+
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-4">
             {/* First Name & Last Name */}
@@ -171,15 +207,30 @@ export default function Register() {
               <label className="block text-[10px] font-bold text-gray-500 uppercase">
                 Password
               </label>
-              <input
-                type="password"
-                name="password"
-                value={formData.password}
-                onChange={handleChange}
-                placeholder="Enter password (min 6 characters)"
-                className="mt-1 w-full bg-gray-50 border border-gray-300/80 rounded-lg p-2.5 text-xs focus:ring-teal-500 focus:bg-white outline-none"
-                required
-              />
+
+              <div className="relative mt-1">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  name="password"
+                  value={formData.password}
+                  onChange={handleChange}
+                  placeholder="Enter password (min 6 characters)"
+                  className="w-full bg-gray-50 border border-gray-300/80 rounded-lg p-2.5 pr-10 text-xs focus:ring-teal-500 focus:bg-white outline-none"
+                  required
+                />
+
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute inset-y-0 right-3 flex items-center text-gray-500 hover:text-teal-600 cursor-pointer"
+                >
+                  {showPassword ? (
+                    <EyeSlashIcon className="h-5 w-5" />
+                  ) : (
+                    <EyeIcon className="h-5 w-5" />
+                  )}
+                </button>
+              </div>
             </div>
 
             {/* Confirm Password */}
@@ -187,15 +238,30 @@ export default function Register() {
               <label className="block text-[10px] font-bold text-gray-500 uppercase">
                 Confirm Password
               </label>
-              <input
-                type="password"
-                name="confirmPassword"
-                value={formData.confirmPassword}
-                onChange={handleChange}
-                placeholder="Verify password"
-                className="mt-1 w-full bg-gray-50 border border-gray-300/80 rounded-lg p-2.5 text-xs focus:ring-teal-500 focus:bg-white outline-none"
-                required
-              />
+
+              <div className="relative mt-1">
+                <input
+                  type={showConfirmPassword ? "text" : "password"}
+                  name="confirmPassword"
+                  value={formData.confirmPassword}
+                  onChange={handleChange}
+                  placeholder="Verify password"
+                  className="w-full bg-gray-50 border border-gray-300/80 rounded-lg p-2.5 pr-10 text-xs focus:ring-teal-500 focus:bg-white outline-none"
+                  required
+                />
+
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  className="absolute inset-y-0 right-3 flex items-center text-gray-500 hover:text-teal-600 cursor-pointer"
+                >
+                  {showConfirmPassword ? (
+                    <EyeSlashIcon className="h-5 w-5" />
+                  ) : (
+                    <EyeIcon className="h-5 w-5" />
+                  )}
+                </button>
+              </div>
             </div>
 
             <button

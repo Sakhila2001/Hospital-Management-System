@@ -1,5 +1,7 @@
 import React, { useState } from "react";
 import { useAdmin } from "../../context/AdminContext";
+import { useAuth } from "../../context/AuthContext";
+import api from "../../api/axios";
 import Logo from "../../assets/images/logo.png";
 import { useNavigate, useLocation, Outlet } from "react-router-dom";
 // Centralized components
@@ -15,6 +17,7 @@ import {
 
 export default function PatientDashboard() {
   const { patients } = useAdmin();
+  const { logout } = useAuth();
   const navigate = useNavigate();
 
   // Active tab: "overview", "book", "profile"
@@ -34,10 +37,19 @@ export default function PatientDashboard() {
     setToast({ show: true, message, type });
   };
 
-  const handleLogout = () => {
-    if (window.confirm("Are you sure you want to log out?")) {
-      navigate("/");
+  const handleLogout = async () => {
+    if (!window.confirm("Are you sure you want to log out from the portal?")) {
+      return;
     }
+
+    try {
+      await api.post("/auth/logout");
+    } catch (err) {
+      console.error("Logout request failed:", err);
+    }
+
+    logout();
+    navigate("/login");
   };
 
   return (
