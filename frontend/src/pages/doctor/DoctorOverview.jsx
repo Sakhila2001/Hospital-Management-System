@@ -1,23 +1,26 @@
 import React from "react";
-import { useAdmin } from "../../context/AdminContext";
+import { useDoctor } from "../../context/doctor/DoctorContext";
 import Card from "../../components/common/Card";
 import { CalendarIcon, CheckCircleIcon, PlayIcon } from "@heroicons/react/24/outline";
 import { useNavigate, useOutletContext } from "react-router-dom";
 export default function DoctorOverview() {
   const { doctor, triggerToast } = useOutletContext();
   const navigate = useNavigate();
-  const { appointments, toggleDoctorAvailability } = useAdmin();
+  const { appointments, toggleAvailability } = useDoctor();
 
-  // Filter appointments assigned to this doctor
-  // John Doe has userId: 101, which maps to doctorId: 101 or 1 in mock
-  const doctorApps = appointments.filter((app) => app.doctorId === 101 || app.doctorId === 1);
+  // The backend already scopes GET /appointments to only this doctor's own appointments
+  const doctorApps = appointments;
 
   const pendingApps = doctorApps.filter((a) => a.status === "confirmed" || a.status === "pending");
   const completedApps = doctorApps.filter((a) => a.status === "completed");
 
-  const handleToggleDuty = () => {
-    toggleDoctorAvailability(doctor.id);
-    triggerToast(`Availability status updated!`);
+  const handleToggleDuty = async () => {
+    try {
+      await toggleAvailability();
+      triggerToast(`Availability status updated!`);
+    } catch (err) {
+      triggerToast(err.message || "Failed to update availability", "error");
+    }
   };
 
   return (

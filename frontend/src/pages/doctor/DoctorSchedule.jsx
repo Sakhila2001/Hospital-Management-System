@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from "react";
-import { useAdmin } from "../../context/AdminContext";
+import { useDoctor } from "../../context/doctor/DoctorContext";
 import Card from "../../components/common/Card";
 import Badge from "../../components/common/Badge";
 import Button from "../../components/common/Button";
@@ -30,9 +30,10 @@ function getNext7Days() {
 
 export default function DoctorSchedule() {
     const { doctor, triggerToast } = useOutletContext();
-  const { appointments, patients } = useAdmin();
+  const { appointments } = useDoctor();
 
-  const doctorApps = appointments.filter((app) => app.doctorId === 101 || app.doctorId === 1);
+  // The backend already scopes GET /appointments to this doctor's own records
+  const doctorApps = appointments;
 
   const next7Days = useMemo(() => getNext7Days(), []);
   const availableDaySet = new Set(doctor.availableDays || []);
@@ -40,21 +41,33 @@ export default function DoctorSchedule() {
   // Selected patient for medical record viewing
   const [selectedPatient, setSelectedPatient] = useState(null);
 
-  const handleOpenPatientDetails = (patientName) => {
-    const match = patients.find(
-      (p) => `${p.firstName} ${p.lastName}`.toLowerCase() === patientName.toLowerCase()
-    );
-    if (match) {
-      setSelectedPatient(match);
-    } else if (triggerToast) {
-      triggerToast("Patient clinical record not found.", "error");
-    }
+  const handleOpenPatientDetails = (app) => {
+    setSelectedPatient({
+      firstName: app.patientName?.split(" ")[0] || "Unknown",
+      lastName: app.patientName?.split(" ").slice(1).join(" ") || "",
+      email: app.patientEmail || "—",
+      phone: app.patientPhone || "—",
+      gender: app.patientGender || "—",
+      dateOfBirth: app.patientDob || "—",
+      bloodGroup: app.bloodGroup || "—",
+      allergies: app.allergies || "",
+      chronicConditions: app.chronicConditions || "",
+      emergencyContactName: app.emergencyContactName || "—",
+      emergencyContactPhone: app.emergencyContactPhone || "—",
+      emergencyContactRelation: app.emergencyContactRelation || "—",
+    });
   };
 
   const appsByDate = useMemo(() => {
     const map = {};
     doctorApps.forEach((app) => {
-      if (app.status !== "confirmed" && app.status !== "pending") return;
+      if (
+        app.status !== "confirmed" &&
+        app.status !== "pending" &&
+        app.status !== "completed" &&
+        app.status !== "no_show"
+      )
+        return;
       const key = new Date(app.date).toDateString();
       if (!map[key]) map[key] = [];
       map[key].push(app);
@@ -138,23 +151,48 @@ export default function DoctorSchedule() {
                     {dayApps.map((app) => (
                       <div
                         key={app.id}
-                        className="flex items-center justify-between text-sm bg-gray-50 rounded-lg px-3 py-2"
+                        className={`flex items-center justify-between text-sm rounded-lg px-3 py-2 border transition-all ${
+                          app.status === "completed"
+                            ? "bg-gray-100/70 border-gray-200/50 text-gray-400"
+                            : app.status === "no_show"
+                            ? "bg-red-50/20 border-red-100/50 text-gray-500 opacity-70"
+                            : "bg-gray-50 border-gray-150 text-gray-700"
+                        }`}
                       >
                         <div className="flex items-center gap-3">
-                          <span className="font-semibold text-gray-800 w-16">{app.time}</span>
+                          <span className={`font-semibold w-16 ${
+                            app.status === "completed" ? "line-through text-gray-400" : "text-gray-800"
+                          }`}>{app.time}</span>
                           <button
-                            onClick={() => handleOpenPatientDetails(app.patientName)}
-                            className="text-teal-600 hover:text-teal-500 hover:underline font-semibold cursor-pointer"
+                            onClick={() => handleOpenPatientDetails(app)}
+                            className={`font-semibold cursor-pointer ${
+                              app.status === "completed"
+                                ? "line-through text-gray-400"
+                                : app.status === "no_show"
+                                ? "text-red-700 hover:underline"
+                                : "text-teal-600 hover:text-teal-500 hover:underline"
+                            }`}
                           >
                             {app.patientName}
                           </button>
-                          <span className="text-gray-400 capitalize text-xs">
+                          <span className={`capitalize text-xs ${
+                            app.status === "completed" ? "line-through text-gray-300" : "text-gray-450"
+                          }`}>
                             {app.type.replace("_", " ")}
+                            {app.status === "no_show" && " (Missed)"}
                           </span>
                         </div>
-                        <Badge
+                         <Badge
                           text={app.status}
-                          variant={app.status === "confirmed" ? "info" : "warning"}
+                          variant={
+                            app.status === "confirmed"
+                              ? "info"
+                              : app.status === "completed"
+                              ? "success"
+                              : app.status === "no_show"
+                              ? "danger"
+                              : "warning"
+                          }
                         />
                       </div>
                     ))}

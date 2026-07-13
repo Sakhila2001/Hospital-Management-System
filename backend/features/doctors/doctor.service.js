@@ -312,49 +312,62 @@ export const updateDoctorProfileService = async (userId, data) => {
         model: User,
         attributes: ["id", "firstName", "lastName", "email", "isActive"],
       },
+      {
+        model: Department,
+        as: "department",
+        attributes: ["id", "name"],
+      },
     ],
   });
 
   return { doctor: updated, created };
 };
 export const getDoctorByUserIdService = async (userId) => {
-  const doctor = await Doctor.findOne({
+  let [doctor, wasCreated] = await Doctor.findOrCreate({
     where: { userId },
+    defaults: {
+      specialization: "General Practice",
+    },
     include: [
       {
         model: User,
-        attributes: ["id", "firstName", "lastName", "isActive"],
+        attributes: [
+          "id",
+          "firstName",
+          "lastName",
+          "email",
+          "isActive",
+          "roles",
+        ],
+      },
+      {
+        model: Department,
+        as: "department",
+        attributes: ["id", "name"],
       },
     ],
   });
 
-  if (!doctor) {
-    const user = await User.findByPk(userId, {
-      attributes: ["id", "firstName", "lastName", "email", "isActive"],
+  if (wasCreated) {
+    // Re-fetch with full associations after creation
+    doctor = await Doctor.findOne({
+      where: { userId },
+      include: [
+        {
+          model: User,
+          attributes: ["id", "firstName", "lastName", "email", "isActive"],
+        },
+        {
+          model: Department,
+          as: "department",
+          attributes: ["id", "name"],
+        },
+      ],
     });
-    if (!user) {
-      throw new Error("User not found");
-    }
+  }
 
-    return {
-      doctor: {
-        firstName: user.firstName,
-        lastName: user.lastName,
-        departmentId: null,
-        phone: null,
-        gender: null,
-        licenseNumber: null,
-        bio: null,
-        isAvailable: null,
-        availableDays: null,
-        availableTimeStart: null,
-        availableTimeEnd: null,
-        qualification: null,
-        experienceYears: null,
-        specialization: null,
-        address: null,
-      },
-    };
+  if (!doctor) {
+    throw new Error("Doctor profile not found");
   }
 
   return { doctor };

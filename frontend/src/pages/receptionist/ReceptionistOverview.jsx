@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useAdmin } from "../../context/AdminContext";
+import { useReceptionist } from "../../context/receptionist/ReceptionistContext";
 import Card from "../../components/common/Card";
 import Badge from "../../components/common/Badge";
 import Button from "../../components/common/Button";
@@ -8,8 +8,14 @@ import { useOutletContext } from "react-router-dom";
 
 export default function ReceptionistOverview() {
   const { receptionist, triggerToast } = useOutletContext();
-  const { appointments, departments, doctors, updateAppointmentStatus } =
-    useAdmin();
+  const {
+    appointments,
+    departments = [],
+    doctors = [],
+    updateAppointmentStatus,
+    assignDoctorAndDepartment,
+    proposeReschedule,
+  } = useReceptionist();
 
   // Active departments and available doctors lists
   const activeDepts = departments.filter((d) => d.isActive);
@@ -29,6 +35,12 @@ export default function ReceptionistOverview() {
   const [triageType, setTriageType] = useState("consultation");
   const [triageReason, setTriageReason] = useState("");
 
+  // Reschedule proposal states
+  const [isProposal, setIsProposal] = useState(false);
+  const [proposedDate, setProposedDate] = useState("");
+  const [proposedTime, setProposedTime] = useState("09:00");
+  const [rescheduleReason, setRescheduleReason] = useState("");
+
   // Doctor listings filtered by department choice
   const [filteredDocs, setFilteredDocs] = useState([]);
 
@@ -42,6 +54,10 @@ export default function ReceptionistOverview() {
       setRoutedDeptId(initialDeptId.toString());
       setTriageType(selectedApp.type);
       setTriageReason(selectedApp.appointmentReason || "");
+      setProposedDate(selectedApp.date || "");
+      setProposedTime(selectedApp.time || "09:00");
+      setRescheduleReason("");
+      setIsProposal(false);
     }
   }, [selectedApp]);
 
@@ -60,20 +76,33 @@ export default function ReceptionistOverview() {
     }
   }, [routedDeptId]);
 
-  const handleTriageSubmit = (e) => {
+  const handleTriageSubmit = async (e) => {
     e.preventDefault();
     try {
       if (!routedDeptId) throw new Error("Please assign a department");
       if (!assignedDocId) throw new Error("Please assign an available doctor");
 
-      updateAppointmentStatus(selectedApp.id, "confirmed", {
-        departmentId: Number(routedDeptId),
-        doctorId: Number(assignedDocId),
-        type: triageType,
-        appointmentReason: triageReason,
-      });
-
-      triggerToast("Appointment triaged and routed successfully!");
+      if (isProposal) {
+        // Send reschedule change proposal request
+        await proposeReschedule(selectedApp.id, {
+          proposedDate,
+          proposedTime,
+          proposedDoctorId: Number(assignedDocId),
+          proposedDepartmentId: Number(routedDeptId),
+          rescheduleReason:
+            rescheduleReason ||
+            "Unavailability of the doctor on requested slot",
+        });
+        triggerToast("Reschedule proposal submitted to patient successfully!");
+      } else {
+        // Direct confirmation
+        await assignDoctorAndDepartment(selectedApp.id, {
+          departmentId: Number(routedDeptId),
+          doctorId: Number(assignedDocId),
+          appointmentReason: triageReason,
+        });
+        triggerToast("Appointment triaged and routed successfully!");
+      }
       setSelectedApp(null);
     } catch (err) {
       triggerToast(err.message, "error");
@@ -147,15 +176,22 @@ export default function ReceptionistOverview() {
                     {app.appointmentReason || "N/A"}
                   </td>
                   <td className="px-6 py-4 text-center">
-                    <Badge text={app.status} variant="warning" />
+                    <Badge
+                      text={
+                        app.rescheduleRequested ? "proposed slot" : app.status
+                      }
+                      variant={app.rescheduleRequested ? "info" : "warning"}
+                    />
                   </td>
                   <td className="px-6 py-4 text-right">
                     <Button
-                      variant="primary"
+                      variant={
+                        app.rescheduleRequested ? "secondary" : "primary"
+                      }
                       onClick={() => setSelectedApp(app)}
-                      className="whitespace-nowrap inline-flex items-center justify-center gap-2 rounded-full bg-teal-600 hover:bg-teal-500 text-white px-5 py-2.5 text-sm font-semibold shadow-xs transition-colors cursor-pointer"
+                      className="w-full sm:w-auto flex items-center justify-center gap-2 rounded-full bg-teal-600 hover:bg-teal-500 text-white px-5 py-2.5 text-sm font-semibold shadow-xs transition-colors cursor-pointer"
                     >
-                      Assign
+                      {app.rescheduleRequested ? "Change Proposal" : "Assign"}
                     </Button>
                   </td>
                 </tr>
@@ -257,6 +293,77 @@ export default function ReceptionistOverview() {
               </select>
             </div>
 
+            {/* Toggle to suggest a reschedule */}
+            <div className="flex items-center gap-2 py-1 bg-amber-50/50 p-2.5 rounded-lg border border-amber-100">
+              <input
+                type="checkbox"
+                id="isProposalCheck"
+                checked={isProposal}
+                onChange={(e) => setIsProposal(e.target.checked)}
+                className="h-4 w-4 rounded border-gray-300 text-teal-600 focus:ring-teal-550"
+              />
+              <label
+                htmlFor="isProposalCheck"
+                className="text-xs font-semibold text-amber-900 cursor-pointer"
+              >
+                Propose different slot/reschedule (Doctor slot conflict)?
+              </label>
+            </div>
+
+            {isProposal && (
+              <div className="space-y-3 p-3 bg-teal-50/40 rounded-lg border border-teal-100 animate-fadeIn">
+                <h5 className="text-[10px] font-extrabold text-teal-800 uppercase tracking-wide">
+                  Reschedule Change Proposal
+                </h5>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-[9px] font-bold text-gray-500 uppercase">
+                      Proposed Date
+                    </label>
+                    <input
+                      type="date"
+                      value={proposedDate}
+                      onChange={(e) => setProposedDate(e.target.value)}
+                      className="mt-1 w-full bg-white border border-gray-300 rounded-lg p-1.5 text-xs focus:ring-teal-500 font-semibold"
+                      required={isProposal}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[9px] font-bold text-gray-500 uppercase">
+                      Proposed Time Slot
+                    </label>
+                    <select
+                      value={proposedTime}
+                      onChange={(e) => setProposedTime(e.target.value)}
+                      className="mt-1 w-full bg-white border border-gray-300 rounded-lg p-1.5 text-xs focus:ring-teal-500 font-semibold"
+                      required={isProposal}
+                    >
+                      <option value="09:00">09:00 AM</option>
+                      <option value="10:00">10:00 AM</option>
+                      <option value="11:00">11:00 AM</option>
+                      <option value="12:00">12:00 PM</option>
+                      <option value="14:00">02:00 PM</option>
+                      <option value="15:00">03:00 PM</option>
+                      <option value="16:00">04:00 PM</option>
+                    </select>
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-[9px] font-bold text-gray-500 uppercase">
+                    Reschedule Reason
+                  </label>
+                  <textarea
+                    rows="2"
+                    value={rescheduleReason}
+                    onChange={(e) => setRescheduleReason(e.target.value)}
+                    placeholder="e.g. Doctor is not available on Thursdays, fits better in afternoon slot..."
+                    className="mt-1 w-full bg-white border border-gray-300 rounded-lg p-1.5 text-xs focus:ring-teal-500 outline-none"
+                    required={isProposal}
+                  />
+                </div>
+              </div>
+            )}
+
             {/* Reason */}
             <div>
               <label className="block text-[10px] font-bold text-gray-500 uppercase">
@@ -281,7 +388,9 @@ export default function ReceptionistOverview() {
                 disabled={filteredDocs.length === 0}
                 className="w-full sm:w-auto flex items-center justify-center gap-2 rounded-full bg-teal-600 hover:bg-teal-500 text-white px-5 py-2.5 text-sm font-semibold shadow-xs transition-colors cursor-pointer"
               >
-                Confirm Appointment Slot
+                {isProposal
+                  ? "Propose Reschedule to Patient"
+                  : "Confirm Appointment Slot"}
               </Button>
             </div>
           </form>

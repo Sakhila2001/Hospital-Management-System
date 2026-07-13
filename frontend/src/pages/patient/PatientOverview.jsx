@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useAdmin } from "../../context/AdminContext";
+import { usePatient } from "../../context/patient/PatientContext";
 import { useOutletContext } from "react-router-dom";
 import Card from "../../components/common/Card";
 import Badge from "../../components/common/Badge";
@@ -13,19 +13,23 @@ import {
 } from "@heroicons/react/24/outline";
 
 export default function PatientOverview() {
+  // patient and triggerToast come from PatientDashboard via Outlet context
   const { patient, triggerToast } = useOutletContext();
-  const { appointments, updateAppointmentStatus } = useAdmin();
 
-  // Filter appointments for current patient
-  const patientApps = appointments.filter(
-    (app) => app.patientId === patient.userId,
-  );
+  // appointments and cancel action come from PatientContext (real API)
+  const {
+    appointments,
+    appointmentsLoading,
+    updateAppointmentStatus,
+    acceptReschedule,
+    rejectReschedule,
+  } = usePatient();
 
-  const pendingApps = patientApps.filter((a) => a.status === "pending");
-  const confirmedApps = patientApps.filter((a) => a.status === "confirmed");
+  const pendingApps = appointments.filter((a) => a.status === "pending");
+  const confirmedApps = appointments.filter((a) => a.status === "confirmed");
 
   // Cancellation modal state
-  const [cancelTarget, setCancelTarget] = useState(null); // holds the appointment being cancelled
+  const [cancelTarget, setCancelTarget] = useState(null);
   const [cancelReason, setCancelReason] = useState("");
   const [cancelError, setCancelError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -37,7 +41,7 @@ export default function PatientOverview() {
   };
 
   const closeCancelModal = () => {
-    if (isSubmitting) return; // don't allow closing mid-submit
+    if (isSubmitting) return;
     setCancelTarget(null);
     setCancelReason("");
     setCancelError("");
@@ -46,9 +50,7 @@ export default function PatientOverview() {
   const handleConfirmCancel = async () => {
     const trimmedReason = cancelReason.trim();
     if (!trimmedReason) {
-      setCancelError(
-        "Please provide a reason for cancelling this appointment.",
-      );
+      setCancelError("Please provide a reason for cancelling this appointment.");
       return;
     }
 
@@ -61,30 +63,114 @@ export default function PatientOverview() {
       closeCancelModal();
     } catch (err) {
       setCancelError(
-        err.message || "Failed to cancel appointment. Please try again.",
+        err.message || "Failed to cancel appointment. Please try again."
       );
     } finally {
       setIsSubmitting(false);
     }
   };
 
+  const proposals = appointments.filter((a) => a.rescheduleRequested);
+
+  const handleAcceptProposal = async (id) => {
+    try {
+      await acceptReschedule(id);
+      triggerToast("Reschedule proposal accepted! Appointment is now confirmed.", "success");
+    } catch (err) {
+      triggerToast(err.message, "error");
+    }
+  };
+
+  const handleRejectProposal = async (id) => {
+    try {
+      await rejectReschedule(id);
+      triggerToast("Reschedule proposal rejected. Returning back to desk.", "success");
+    } catch (err) {
+      triggerToast(err.message, "error");
+    }
+  };
+
+  if (appointmentsLoading) {
+    return (
+      <p className="text-sm text-gray-400 text-center py-10">
+        Loading your appointments...
+      </p>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Welcome Banner */}
       <div className="bg-gradient-to-r from-teal-600 to-teal-700 rounded-2xl p-6 text-white shadow-md relative overflow-hidden">
         <div className="absolute top-0 right-0 h-32 w-32 rounded-full bg-white/5 -mr-10 -mt-10" />
-        <h3 className="text-xl font-bold">Hello, {patient.firstName}!</h3>
+        <h3 className="text-xl font-bold">
+          Hello, {patient?.firstName || "Patient"}!
+        </h3>
         <p className="text-xs text-teal-100 mt-1 max-w-md">
           Welcome to your City Care portal. Check your clinic schedules, view
           doctor routing triage details, or request a new consultation session.
         </p>
       </div>
 
+      {/* Reschedule Proposals Block */}
+      {proposals.length > 0 && (
+        <div className="space-y-3">
+          <h4 className="text-xs font-bold text-amber-800 uppercase tracking-wider">
+            ⚠️ Attention Required: Reschedule Requests
+          </h4>
+          <div className="grid grid-cols-1 gap-4">
+            {proposals.map((app) => (
+              <div
+                key={app.id}
+                className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-xs"
+              >
+                <div className="space-y-1">
+                  <p className="text-xs font-bold text-amber-900 uppercase">
+                    Proposed Change for Triage Request ({app.type?.replace("_", " ")})
+                  </p>
+                  <p className="text-xs text-gray-700">
+                    The receptionist requested changes for your slot on <span className="font-semibold text-gray-900">{app.date}</span> at <span className="font-semibold text-gray-900">{app.time}</span>.
+                  </p>
+                  <div className="text-xs bg-white/80 p-2 rounded border border-amber-100 mt-2 space-y-1">
+                    <p className="text-teal-900 font-semibold">
+                      👉 Proposed Slot: <span className="font-bold">{app.proposedDate}</span> at <span className="font-bold">{app.proposedTime}</span>
+                    </p>
+                    <p className="text-gray-650 font-medium">
+                      👉 Department: <span className="font-semibold text-gray-800">{app.proposedDepartmentName}</span> | Doctor: <span className="font-semibold text-gray-800">{app.proposedDoctorName}</span>
+                    </p>
+                    {app.rescheduleReason && (
+                      <p className="text-gray-500 italic mt-1">
+                        Reason: "{app.rescheduleReason}"
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                <div className="flex gap-2 shrink-0">
+                  <button
+                    onClick={() => handleRejectProposal(app.id)}
+                    className="px-4 py-2 bg-white hover:bg-red-50 text-red-650 hover:text-red-700 border border-red-200 text-xs font-bold rounded-full transition-all cursor-pointer"
+                  >
+                    Reject Proposal
+                  </button>
+                  <button
+                    onClick={() => handleAcceptProposal(app.id)}
+                    className="px-4 py-2 bg-teal-600 hover:bg-teal-500 text-white text-xs font-bold rounded-full shadow-xs transition-all cursor-pointer"
+                  >
+                    Accept & Confirm
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Metrics Row */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
         <Card
           title="Total Requested"
-          value={patientApps.length}
+          value={appointments.length}
           subtitle="Visits log"
           icon={CalendarIcon}
         />
@@ -108,31 +194,17 @@ export default function PatientOverview() {
           <table className="w-full text-sm text-left text-gray-500 min-w-[600px]">
             <thead className="text-xs text-gray-700 bg-gray-50/75 border-b border-gray-150">
               <tr>
-                <th scope="col" className="px-6 py-3">
-                  Preferred Date
-                </th>
-                <th scope="col" className="px-6 py-3">
-                  Time Slot
-                </th>
-                <th scope="col" className="px-6 py-3">
-                  Triage Type
-                </th>
-                <th scope="col" className="px-6 py-3">
-                  Routed Department
-                </th>
-                <th scope="col" className="px-6 py-3">
-                  Assigned Doctor
-                </th>
-                <th scope="col" className="px-6 py-3 text-center">
-                  Status
-                </th>
-                <th scope="col" className="px-6 py-3 text-right">
-                  Actions
-                </th>
+                <th scope="col" className="px-6 py-3">Preferred Date</th>
+                <th scope="col" className="px-6 py-3">Time Slot</th>
+                <th scope="col" className="px-6 py-3">Triage Type</th>
+                <th scope="col" className="px-6 py-3">Routed Department</th>
+                <th scope="col" className="px-6 py-3">Assigned Doctor</th>
+                <th scope="col" className="px-6 py-3 text-center">Status</th>
+                <th scope="col" className="px-6 py-3 text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {patientApps.map((app) => (
+              {appointments.map((app) => (
                 <tr key={app.id} className="hover:bg-gray-50/50">
                   <td className="px-6 py-4 font-semibold text-gray-900">
                     {app.date}
@@ -141,25 +213,27 @@ export default function PatientOverview() {
                     {app.time}
                   </td>
                   <td className="px-6 py-4 capitalize text-gray-550 font-semibold">
-                    {app.type.replace("_", " ")}
+                    {app.type?.replace("_", " ") || "—"}
                   </td>
                   <td className="px-6 py-4 text-gray-500 font-medium">
-                    {app.departmentName}
+                    {app.departmentName || "—"}
                   </td>
                   <td className="px-6 py-4 text-gray-500 font-medium">
-                    {app.doctorName}
+                    {app.doctorName || "—"}
                   </td>
                   <td className="px-6 py-4 text-center">
                     <Badge
-                      text={app.status}
+                      text={app.rescheduleRequested ? "slot proposal" : app.status}
                       variant={
-                        app.status === "confirmed"
+                        app.rescheduleRequested
+                          ? "warning"
+                          : app.status === "confirmed"
                           ? "info"
                           : app.status === "completed"
-                            ? "success"
-                            : app.status === "cancelled"
-                              ? "danger"
-                              : "warning"
+                          ? "success"
+                          : app.status === "cancelled"
+                          ? "danger"
+                          : "warning"
                       }
                     />
                   </td>
@@ -173,21 +247,19 @@ export default function PatientOverview() {
                         Cancel
                       </Button>
                     ) : (
-                      <span className="text-xs text-gray-400 font-medium">
-                        -
-                      </span>
+                      <span className="text-xs text-gray-400 font-medium">-</span>
                     )}
                   </td>
                 </tr>
               ))}
-              {patientApps.length === 0 && (
+              {appointments.length === 0 && (
                 <tr>
                   <td
                     colSpan="7"
                     className="p-8 text-center text-gray-400 font-medium bg-white"
                   >
-                    You have no scheduled consultations. Click "Book
-                    Appointment" above to submit a triage request.
+                    You have no scheduled consultations. Click "Book Appointment"
+                    above to submit a triage request.
                   </td>
                 </tr>
               )}

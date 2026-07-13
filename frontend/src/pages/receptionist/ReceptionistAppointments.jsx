@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useAdmin } from "../../context/AdminContext";
+import { useReceptionist } from "../../context/receptionist/ReceptionistContext";
 import Card from "../../components/common/Card";
 import Badge from "../../components/common/Badge";
 import Button from "../../components/common/Button";
@@ -12,7 +12,7 @@ import {
 
 export default function ReceptionistAppointments() {
   const { receptionist, triggerToast } = useOutletContext();
-  const { appointments, updateAppointmentStatus } = useAdmin();
+  const { appointments, updateAppointmentStatus } = useReceptionist();
   const [searchTerm, setSearchTerm] = useState("");
 
   // Filter only confirmed/completed/cancelled appointments (exclude pending since they wait in triage)

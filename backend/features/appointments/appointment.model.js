@@ -74,6 +74,38 @@ const Appointment = sequelize.define(
     cancelledAt: {
       type: DataTypes.DATE,
     },
+    rescheduleRequested: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false,
+    },
+    proposedDate: {
+      type: DataTypes.DATEONLY,
+      allowNull: true,
+    },
+    proposedTime: {
+      type: DataTypes.TIME,
+      allowNull: true,
+    },
+    proposedDoctorId: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      references: {
+        model: "doctors",
+        key: "id",
+      },
+    },
+    proposedDepartmentId: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      references: {
+        model: "departments",
+        key: "id",
+      },
+    },
+    rescheduleReason: {
+      type: DataTypes.TEXT,
+      allowNull: true,
+    },
   },
   {
     tableName: "appointments",

@@ -59,6 +59,21 @@ export const registerService = async (data) => {
     roles: roles || "patient",
   });
 
+  // Auto-create the corresponding profile record so the portal works immediately
+  // after registration — without this, /me/profile and /appointments return
+  // "Doctor/Patient/Receptionist profile not found".
+  const assignedRole = roles || "patient";
+  if (assignedRole === "doctor") {
+    const { default: Doctor } = await import("../doctors/doctor.model.js");
+    await Doctor.create({ userId: user.id });
+  } else if (assignedRole === "receptionist") {
+    const { default: Receptionist } = await import("../receptionists/receptionist.model.js");
+    await Receptionist.create({ userId: user.id });
+  } else if (assignedRole === "patient") {
+    const { default: Patient } = await import("../patients/patient.model.js");
+    await Patient.create({ userId: user.id });
+  }
+
   const safeUser = user.toJSON();
   delete safeUser.password;
   delete safeUser.refreshToken;

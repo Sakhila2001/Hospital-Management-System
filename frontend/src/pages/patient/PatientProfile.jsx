@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useAdmin } from "../../context/AdminContext";
+import { usePatient } from "../../context/patient/PatientContext";
 import Card from "../../components/common/Card";
 import Button from "../../components/common/Button";
 import Input from "../../components/common/Input";
@@ -7,33 +7,48 @@ import Modal from "../../components/common/Modal";
 import PatientProfileView from "./PatientProfileView";
 import { useOutletContext } from "react-router-dom";
 
-const GENDER_OPTIONS = ["Male", "Female", "Other"];
+// FIX: lowercase values to match backend ENUM validation
+const GENDER_OPTIONS = [
+  { label: "Male", value: "male" },
+  { label: "Female", value: "female" },
+  { label: "Other", value: "other" },
+];
 const BLOOD_GROUP_OPTIONS = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
-const MARITAL_STATUS_OPTIONS = ["Single", "Married", "Divorced", "Widowed"];
+const MARITAL_STATUS_OPTIONS = [
+  { label: "Single", value: "single" },
+  { label: "Married", value: "married" },
+  { label: "Divorced", value: "divorced" },
+  { label: "Widowed", value: "widowed" },
+];
 
 export default function PatientProfile() {
   const { patient, triggerToast } = useOutletContext();
-  const { updatePatient } = useAdmin();
+  // FIX: use usePatient() which calls PUT /patients/me/profile (patient role)
+  // NOT useAdmin() which calls PUT /patients/:userId (admin only → 403)
+  const { updateProfile } = usePatient();
 
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [formError, setFormError] = useState("");
 
   const buildFormFields = () => ({
-    firstName: patient.firstName || "",
-    lastName: patient.lastName || "",
-    dateOfBirth: patient.dateOfBirth
-      ? String(patient.dateOfBirth).slice(0, 10) // trims to YYYY-MM-DD for <input type="date">
+    firstName: patient?.firstName || "",
+    lastName: patient?.lastName || "",
+    dateOfBirth: patient?.dateOfBirth
+      ? String(patient.dateOfBirth).slice(0, 10)
       : "",
-    gender: patient.gender || "",
-    bloodGroup: patient.bloodGroup || "",
-    maritalStatus: patient.maritalStatus || "",
-    phone: patient.phone || "",
-    address: patient.address || "",
-    city: patient.city || "",
-    allergies: patient.allergies || "",
-    chronicConditions: patient.chronicConditions || "",
-    emergencyContactName: patient.emergencyContactName || "",
-    emergencyContactPhone: patient.emergencyContactPhone || "",
-    emergencyContactRelation: patient.emergencyContactRelation || "",
+    // Normalize to lowercase to match backend ENUMs
+    gender: patient?.gender ? patient.gender.toLowerCase() : "",
+    bloodGroup: patient?.bloodGroup || "",
+    maritalStatus: patient?.maritalStatus ? patient.maritalStatus.toLowerCase() : "",
+    phone: patient?.phone || "",
+    address: patient?.address || "",
+    city: patient?.city || "",
+    allergies: patient?.allergies || "",
+    chronicConditions: patient?.chronicConditions || "",
+    emergencyContactName: patient?.emergencyContactName || "",
+    emergencyContactPhone: patient?.emergencyContactPhone || "",
+    emergencyContactRelation: patient?.emergencyContactRelation || "",
   });
 
   const [formFields, setFormFields] = useState(buildFormFields);
@@ -42,23 +57,30 @@ export default function PatientProfile() {
     setFormFields({ ...formFields, [key]: e.target.value });
 
   const handleEditClick = () => {
-    setFormFields(buildFormFields()); // start edit from latest saved values
+    setFormFields(buildFormFields());
+    setFormError("");
     setIsEditModalOpen(true);
   };
 
   const handleCancel = () => {
-    setFormFields(buildFormFields()); // discard unsaved edits
+    setFormFields(buildFormFields());
+    setFormError("");
     setIsEditModalOpen(false);
   };
 
-  const handleSubmit = (e) => {
+  // FIX: async so API errors are properly caught and shown
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    setSaving(true);
+    setFormError("");
     try {
-      updatePatient(patient.userId, formFields);
-      triggerToast("Medical profile updated successfully!");
-      setIsEditModalOpen(false); // back to view mode after saving
+      await updateProfile(formFields);
+      triggerToast("Medical profile updated successfully!", "success");
+      setIsEditModalOpen(false);
     } catch (err) {
-      triggerToast(err.message, "error");
+      setFormError(err.message || "Failed to update profile. Please try again.");
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -73,6 +95,12 @@ export default function PatientProfile() {
         title="Update Medical Profile"
       >
         <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Inline error banner */}
+          {formError && (
+            <div className="p-3 bg-red-50 border border-red-200 text-red-700 rounded-lg text-xs font-semibold">
+              {formError}
+            </div>
+          )}
           {/* Personal Info */}
           <div className="space-y-4">
             <h4 className="text-xs font-bold text-teal-700 uppercase border-b border-gray-100 pb-1">
@@ -111,8 +139,8 @@ export default function PatientProfile() {
                 >
                   <option value="">Select...</option>
                   {GENDER_OPTIONS.map((g) => (
-                    <option key={g} value={g}>
-                      {g}
+                    <option key={g.value} value={g.value}>
+                      {g.label}
                     </option>
                   ))}
                 </select>
@@ -145,8 +173,8 @@ export default function PatientProfile() {
                 >
                   <option value="">Select...</option>
                   {MARITAL_STATUS_OPTIONS.map((m) => (
-                    <option key={m} value={m}>
-                      {m}
+                    <option key={m.value} value={m.value}>
+                      {m.label}
                     </option>
                   ))}
                 </select>
@@ -241,16 +269,18 @@ export default function PatientProfile() {
               type="button"
               variant="secondary"
               onClick={handleCancel}
-              className="rounded-full border border-gray-300 text-gray-600 hover:bg-gray-50 px-5 py-2.5 text-sm font-semibold transition-colors cursor-pointer"
+              disabled={saving}
+              className="rounded-full border border-gray-300 text-gray-600 hover:bg-gray-50 px-5 py-2.5 text-sm font-semibold transition-colors cursor-pointer disabled:opacity-50"
             >
               Cancel
             </Button>
             <Button
               type="submit"
               variant="primary"
-              className="flex items-center justify-center gap-2 rounded-full bg-teal-600 hover:bg-teal-500 text-white px-5 py-2.5 text-sm font-semibold shadow-xs transition-colors cursor-pointer"
+              disabled={saving}
+              className="flex items-center justify-center gap-2 rounded-full bg-teal-600 hover:bg-teal-500 disabled:opacity-60 disabled:cursor-not-allowed text-white px-5 py-2.5 text-sm font-semibold shadow-xs transition-colors cursor-pointer"
             >
-              Save Medical Profile
+              {saving ? "Saving..." : "Save Medical Profile"}
             </Button>
           </div>
         </form>

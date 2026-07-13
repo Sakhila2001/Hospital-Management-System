@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useAdmin } from "../../context/AdminContext";
+import { useReceptionist } from "../../context/receptionist/ReceptionistContext";
 import Card from "../../components/common/Card";
 import Badge from "../../components/common/Badge";
 import Button from "../../components/common/Button";
@@ -17,7 +17,8 @@ const BLOOD_GROUPS = ["A+", "A-", "B+", "B-", "O+", "O-", "AB+", "AB-"];
 export default function ReceptionistPatients() {
   const { receptionist, patientModal, setPatientModal, triggerToast } =
     useOutletContext();
-  const { patients, addPatient, updatePatient, deletePatient } = useAdmin();
+  const { patients, createPatient, updatePatient, deletePatient } =
+    useReceptionist();
 
   const [searchTerm, setSearchTerm] = useState("");
 
@@ -105,7 +106,7 @@ export default function ReceptionistPatients() {
     }
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     try {
       if (!form.firstName || !form.lastName) {
@@ -126,10 +127,10 @@ export default function ReceptionistPatients() {
 
       if (patientModal.action === "edit" && patientModal.data) {
         const { password, confirmPassword, ...updateData } = form;
-        updatePatient(patientModal.data.id, updateData);
+        await updatePatient(patientModal.data.id, updateData);
         triggerToast("Patient details updated successfully!");
       } else {
-        addPatient({
+        await createPatient({
           ...form,
           registeredBy: receptionist?.userId,
         });

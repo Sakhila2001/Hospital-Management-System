@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from "react";
-import { useAdmin } from "../../context/AdminContext";
+import { useDoctor } from "../../context/doctor/DoctorContext";
 import Card from "../../components/common/Card";
 import Badge from "../../components/common/Badge";
 import Button from "../../components/common/Button";
@@ -36,12 +36,10 @@ function isSameDay(dateStr, ref) {
 }
 
 export default function DoctorAppointments({ doctor, triggerToast }) {
-  const { appointments, patients, updateAppointmentStatus } = useAdmin();
+  const { appointments, updateAppointmentStatus } = useDoctor();
 
-  // Filter appointments assigned to this doctor
-  const doctorApps = appointments.filter(
-    (app) => app.doctorId === 101 || app.doctorId === 1,
-  );
+  // The backend already scopes GET /appointments to this doctor's own records
+  const doctorApps = appointments;
 
   // Selected patient for medical record viewing
   const [selectedPatient, setSelectedPatient] = useState(null);
@@ -82,22 +80,31 @@ export default function DoctorAppointments({ doctor, triggerToast }) {
     });
   }, [doctorApps, statusFilter, dateFilter, search]);
 
-  const handleOpenPatientDetails = (patientName) => {
-    const match = patients.find(
-      (p) =>
-        `${p.firstName} ${p.lastName}`.toLowerCase() ===
-        patientName.toLowerCase(),
-    );
-    if (match) {
-      setSelectedPatient(match);
-    } else {
-      triggerToast("Patient clinical record not found.", "error");
-    }
+  const handleOpenPatientDetails = (app) => {
+    // Build patient details from the normalized appointment data
+    setSelectedPatient({
+      firstName: app.patientName?.split(" ")[0] || "Unknown",
+      lastName: app.patientName?.split(" ").slice(1).join(" ") || "",
+      email: app.patientEmail || "—",
+      phone: app.patientPhone || "—",
+      gender: app.patientGender || "—",
+      dateOfBirth: app.patientDob || "—",
+      bloodGroup: app.bloodGroup || "—",
+      allergies: app.allergies || "",
+      chronicConditions: app.chronicConditions || "",
+      emergencyContactName: app.emergencyContactName || "—",
+      emergencyContactPhone: app.emergencyContactPhone || "—",
+      emergencyContactRelation: app.emergencyContactRelation || "—",
+    });
   };
 
-  const handleUpdateStatus = (appId, nextStatus) => {
-    updateAppointmentStatus(appId, nextStatus);
-    triggerToast(`Appointment status updated to ${nextStatus.toUpperCase()}.`);
+  const handleUpdateStatus = async (appId, nextStatus) => {
+    try {
+      await updateAppointmentStatus(appId, nextStatus);
+      triggerToast(`Appointment marked as ${nextStatus.replace("_", " ").toUpperCase()}.`);
+    } catch (err) {
+      triggerToast(err.message || "Failed to update status", "error");
+    }
   };
 
   return (
@@ -143,13 +150,13 @@ export default function DoctorAppointments({ doctor, triggerToast }) {
         </div>
 
         <div className="overflow-x-auto scrollbar-hide -mx-6">
-          <table className="w-full text-sm text-left text-gray-500 table-fixed min-w-[900px]">
+          <table className="w-full text-sm text-left text-gray-500">
             <colgroup>
-              <col className="w-[16%]" />
-              <col className="w-[11%]" />
-              <col className="w-[9%]" />
-              <col className="w-[11%]" />
-              <col className="w-[22%]" />
+              <col className="w-[15%]" />
+              <col className="w-[12%]" />
+              <col className="w-[10%]" />
+              <col className="w-[12%]" />
+              <col className="w-[20%]" />
               <col className="w-[11%]" />
               <col className="w-[20%]" />
             </colgroup>
@@ -183,7 +190,7 @@ export default function DoctorAppointments({ doctor, triggerToast }) {
                 <tr key={app.id} className="hover:bg-gray-50/50">
                   <td className="px-6 py-4 font-semibold text-gray-900">
                     <button
-                      onClick={() => handleOpenPatientDetails(app.patientName)}
+                      onClick={() => handleOpenPatientDetails(app)}
                       className="text-teal-600 hover:text-teal-500 hover:underline font-bold text-left cursor-pointer"
                     >
                       {app.patientName}
@@ -230,59 +237,46 @@ export default function DoctorAppointments({ doctor, triggerToast }) {
                       }
                     />
                   </td>
-                  <td className="px-6 py-4 text-right">
-                    <div className="flex items-center justify-end gap-2">
-                      {app.status === "confirmed" && (
-                        <>
-                          <button
-                            onClick={() =>
-                              handleUpdateStatus(app.id, "completed")
-                            }
-                            className="p-1 text-teal-600 hover:bg-teal-50 rounded-lg border border-gray-100 cursor-pointer"
-                            title="Mark as completed"
-                          >
-                            <CheckCircleIcon className="h-5 w-5" />
-                          </button>
-                          <button
-                            onClick={() =>
-                              handleUpdateStatus(app.id, "no_show")
-                            }
-                            className="p-1 text-red-500 hover:bg-red-50 rounded-lg border border-gray-100 cursor-pointer"
-                            title="Mark as no-show"
-                          >
-                            <XCircleIcon className="h-5 w-5" />
-                          </button>
-                        </>
-                      )}
+                  <td className="px-6 py-4 text-right whitespace-nowrap">
+                    <div className="flex items-center justify-end gap-2 flex-nowrap">
+                      {(() => {
+                        const isToday = isSameDay(app.date, new Date());
 
-                      {app.status === "completed" && (
-                        <button
-                          onClick={() => handleUpdateStatus(app.id, "no_show")}
-                          className="p-1 text-red-500 hover:bg-red-50 rounded-lg border border-gray-100 cursor-pointer"
-                          title="Change to no-show"
-                        >
-                          <XCircleIcon className="h-5 w-5" />
-                        </button>
-                      )}
+                        if (!isToday && app.status === "confirmed") {
+                          return (
+                            <span className="text-xs text-gray-400 italic font-medium">
+                              {new Date(app.date) > new Date(new Date().toDateString())
+                                ? "Upcoming"
+                                : "Past"}
+                            </span>
+                          );
+                        }
 
-                      {app.status === "no_show" && (
-                        <button
-                          onClick={() =>
-                            handleUpdateStatus(app.id, "completed")
-                          }
-                          className="p-1 text-teal-600 hover:bg-teal-50 rounded-lg border border-gray-100 cursor-pointer"
-                          title="Change to completed"
-                        >
-                          <CheckCircleIcon className="h-5 w-5" />
-                        </button>
-                      )}
+                        if (app.status === "confirmed") {
+                          return (
+                            <>
+                              <button
+                                onClick={() => handleUpdateStatus(app.id, "completed")}
+                                className="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-semibold text-white bg-teal-600 hover:bg-teal-700 active:scale-95 rounded-lg shadow-sm transition-all duration-150 cursor-pointer"
+                              >
+                                <CheckCircleIcon className="h-3 w-3" />
+                                Completed
+                              </button>
+                              <button
+                                onClick={() => handleUpdateStatus(app.id, "no_show")}
+                                className="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-semibold text-white bg-red-500 hover:bg-red-600 active:scale-95 rounded-lg shadow-sm transition-all duration-150 cursor-pointer"
+                              >
+                                <XCircleIcon className="h-3 w-3" />
+                                No Show
+                              </button>
+                            </>
+                          );
+                        }
 
-                      {(app.status === "pending" ||
-                        app.status === "cancelled") && (
-                        <span className="text-xs text-gray-400 font-medium">
-                          -
-                        </span>
-                      )}
+                        return (
+                          <span className="text-xs text-gray-400 font-medium">—</span>
+                        );
+                      })()}
                     </div>
                   </td>
                 </tr>

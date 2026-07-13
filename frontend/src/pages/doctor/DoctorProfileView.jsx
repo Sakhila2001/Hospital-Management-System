@@ -42,7 +42,11 @@ function formatTime(timeStr) {
   });
 }
 
-export default function DoctorProfileView({ doctor, onEdit }) {
+export default function DoctorProfileView({
+  doctor,
+  departments = [],
+  onEdit,
+}) {
   return (
     <Card title="Doctor Profile">
       <div className="space-y-6">
@@ -108,7 +112,11 @@ export default function DoctorProfileView({ doctor, onEdit }) {
             <Field label="License Number" value={doctor.licenseNumber} />
             <Field
               label="Department"
-              value={doctor.departmentName || doctor.Department?.name}
+              value={
+                doctor.department?.name ||
+                doctor.Department?.name ||
+                departments.find((d) => d.id === doctor.departmentId)?.name
+              }
             />
           </div>
           {doctor.bio && (

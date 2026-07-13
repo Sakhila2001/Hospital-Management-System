@@ -8,6 +8,9 @@ import Register from "./pages/auth/Register";
 import StaffRegister from "./pages/auth/StaffRegister";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import { AdminProvider } from "./context/AdminContext";
+import { DoctorProvider } from "./context/doctor/DoctorContext";
+import { PatientProvider } from "./context/patient/PatientContext";
+import { ReceptionistProvider } from "./context/receptionist/ReceptionistContext";
 import BookingWidget from "./components/landing/BookingWidget";
 import DoctorDashboard from "./pages/doctor/DoctorDashboard";
 import ReceptionistDashboard from "./pages/receptionist/ReceptionistDashboard";
@@ -63,12 +66,14 @@ function App() {
           <Route path="patients" element={<Patients />} />
         </Route>
         <Route path="/user/appointment" element={<BookingWidget />} />
-        {/* Doctor sub-views */}
+        {/* Doctor sub-views — wrapped in DoctorProvider for real backend data */}
         <Route
           path="/doctor"
           element={
             <ProtectedRoute allowedRoles={["doctor"]}>
-              <DoctorDashboard />
+              <DoctorProvider>
+                <DoctorDashboard />
+              </DoctorProvider>
             </ProtectedRoute>
           }
         >
@@ -79,11 +84,14 @@ function App() {
           <Route path="profile" element={<DoctorProfile />} />
         </Route>
 
+        {/* Receptionist sub-views — wrapped in ReceptionistProvider */}
         <Route
           path="receptionist/*"
           element={
             <ProtectedRoute allowedRoles={["receptionist"]}>
-              <ReceptionistDashboard />
+              <ReceptionistProvider>
+                <ReceptionistDashboard />
+              </ReceptionistProvider>
             </ProtectedRoute>
           }
         >
@@ -93,12 +101,14 @@ function App() {
           <Route path="patients" element={<ReceptionistPatients />} />
           <Route path="profile" element={<ReceptionistProfile />} />
         </Route>
-        {/* Patient sub-views */}
+        {/* Patient sub-views — wrapped in PatientProvider */}
         <Route
           path="/patient"
           element={
             <ProtectedRoute allowedRoles={["patient"]}>
-              <PatientDashboard />
+              <PatientProvider>
+                <PatientDashboard />
+              </PatientProvider>
             </ProtectedRoute>
           }
         >

@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useAdmin } from "../../context/AdminContext";
+import { useReceptionist } from "../../context/receptionist/ReceptionistContext";
 import Card from "../../components/common/Card";
 import Button from "../../components/common/Button";
 import Input from "../../components/common/Input";
@@ -11,9 +11,13 @@ const SHIFT_OPTIONS = ["Morning", "Evening", "Night"];
 
 export default function ReceptionistProfile() {
     const { receptionist, triggerToast } = useOutletContext();
-  const { updateReceptionist, departments = [] } = useAdmin();
+  // FIX: use useReceptionist().updateProfile → PUT /receptionists/me/profile
+  // NOT useAdmin().updateReceptionist → PUT /receptionists/:userId (admin only)
+  const { updateProfile, departments = [] } = useReceptionist();
 
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [formError, setFormError] = useState("");
 
   const getDeptName = (id) => {
     const dept = departments.find((d) => d.id === Number(id));
@@ -21,19 +25,27 @@ export default function ReceptionistProfile() {
   };
 
   const buildFormFields = () => ({
-    firstName: receptionist.firstName || "",
-    lastName: receptionist.lastName || "",
-    email: receptionist.email || "",
-    phone: receptionist.phone || "",
-    departmentId: receptionist.departmentId || "",
-    employeeCode: receptionist.employeeCode || "",
-    shift: receptionist.shift || "Morning",
-    joinedDate: receptionist.joinedDate
+    firstName: receptionist?.firstName || "",
+    lastName: receptionist?.lastName || "",
+    email: receptionist?.email || "",
+    phone: receptionist?.phone || "",
+    departmentId: receptionist?.departmentId || "",
+    employeeCode: receptionist?.employeeCode || "",
+    shift: receptionist?.shift || "Morning",
+    joinedDate: receptionist?.joinedDate
       ? String(receptionist.joinedDate).slice(0, 10)
       : "",
   });
 
   const [formFields, setFormFields] = useState(buildFormFields);
+
+  if (!receptionist) {
+    return (
+      <p className="text-sm text-gray-400 text-center py-10">
+        Loading profile...
+      </p>
+    );
+  }
 
   const updateField = (key) => (e) =>
     setFormFields({ ...formFields, [key]: e.target.value });
@@ -48,19 +60,23 @@ export default function ReceptionistProfile() {
     setIsEditModalOpen(false);
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    setSaving(true);
+    setFormError("");
     try {
-      updateReceptionist(receptionist.userId, {
+      await updateProfile({
         ...formFields,
         departmentId: formFields.departmentId
           ? Number(formFields.departmentId)
           : undefined,
       });
-      triggerToast("Profile updated successfully!");
+      triggerToast("Profile updated successfully!", "success");
       setIsEditModalOpen(false);
     } catch (err) {
-      triggerToast(err.message, "error");
+      setFormError(err.message || "Failed to update profile. Please try again.");
+    } finally {
+      setSaving(false);
     }
   };
 

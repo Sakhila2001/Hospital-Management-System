@@ -21,6 +21,20 @@ receptionistRouter.post(
   adminCreateReceptionist,
 );
 receptionistRouter.get("/", authorizeRoles("admin"), getAllReceptionists);
+
+// IMPORTANT: /me/profile MUST come before /:userId so Express does not
+// treat the literal "me" as a userId parameter and route it to the admin handler.
+receptionistRouter.get(
+  "/me/profile",
+  authorizeRoles("receptionist"),
+  getReceptionistProfile,
+);
+receptionistRouter.put(
+  "/me/profile",
+  authorizeRoles("receptionist"),
+  updateReceptionistProfile,
+);
+
 receptionistRouter.get(
   "/:userId",
   authorizeRoles("admin"),
@@ -35,16 +49,6 @@ receptionistRouter.delete(
   "/:userId",
   authorizeRoles("admin"),
   deleteReceptionist,
-);
-receptionistRouter.get(
-  "/me/profile",
-  authorizeRoles("receptionist"),
-  getReceptionistProfile,
-);
-receptionistRouter.put(
-  "/me/profile",
-  authorizeRoles("receptionist"),
-  updateReceptionistProfile,
 );
 
 export default receptionistRouter;

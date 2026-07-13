@@ -1,14 +1,11 @@
 import React, { useState } from "react";
-import { useAdmin } from "../../context/AdminContext";
+import { useReceptionist } from "../../context/receptionist/ReceptionistContext";
 import { useAuth } from "../../context/AuthContext";
 import api from "../../api/axios";
 import Logo from "../../assets/images/logo.png";
-//import { useNavigate } from "react-router-dom";
 import { useNavigate, useLocation, Outlet } from "react-router-dom";
 
-// Centralized components
 import Toast from "../../components/common/Toast";
-import Modal from "../../components/common/Modal";
 
 import {
   HomeIcon,
@@ -20,19 +17,13 @@ import {
 } from "@heroicons/react/24/outline";
 
 export default function ReceptionistDashboard() {
-  const { receptionists, departments } = useAdmin();
+  const { profile: currentReceptionist, profileLoading, departments = [] } = useReceptionist();
   const { logout } = useAuth();
   const navigate = useNavigate();
 
-  // Active tab: "overview", "appointments", "patients", "profile"
   const location = useLocation();
   const activeTab = location.pathname.split("/")[2] || "overview";
 
-  // Simulated logged-in receptionist: Alice Smith (userId = 201)
-  const currentReceptionist =
-    receptionists.find((r) => r.userId === 201) || receptionists[0];
-
-  // Toast notification
   const [toast, setToast] = useState({
     show: false,
     message: "",
@@ -43,7 +34,6 @@ export default function ReceptionistDashboard() {
   };
 
   // Shared Receptionist Edit Modals for Patients
-  // { show: false, action: "create" | "edit", data: null }
   const [patientModal, setPatientModal] = useState({
     show: false,
     action: "",
@@ -59,14 +49,12 @@ export default function ReceptionistDashboard() {
     if (!window.confirm("Are you sure you want to log out from the portal?")) {
       return;
     }
-
     try {
       await api.post("/auth/logout");
     } catch (err) {
       console.error("Logout request failed:", err);
     }
-
-    logout(); // clears user + accessToken from AuthContext
+    logout();
     navigate("/login");
   };
 
@@ -77,9 +65,16 @@ export default function ReceptionistDashboard() {
     profile: "My Profile",
   };
 
+  if (profileLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <p className="text-gray-500 text-sm">Loading reception portal...</p>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col font-sans antialiased text-gray-900">
-      {/* Toast Notification */}
       <Toast
         message={toast.message}
         type={toast.type}
@@ -162,7 +157,8 @@ export default function ReceptionistDashboard() {
               title="View my profile"
             >
               <div className="h-9 w-9 rounded-full bg-teal-500 text-white flex items-center justify-center font-bold text-sm shadow-sm uppercase">
-                RC
+                {currentReceptionist?.firstName?.[0] || "R"}
+                {currentReceptionist?.lastName?.[0] || "C"}
               </div>
               <div>
                 <p className="text-sm font-medium text-gray-800 leading-tight">

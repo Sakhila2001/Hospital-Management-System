@@ -1,10 +1,9 @@
 import React, { useState } from "react";
-import { useAdmin } from "../../context/AdminContext";
+import { usePatient } from "../../context/patient/PatientContext";
 import { useAuth } from "../../context/AuthContext";
 import api from "../../api/axios";
 import Logo from "../../assets/images/logo.png";
 import { useNavigate, useLocation, Outlet } from "react-router-dom";
-// Centralized components
 import Toast from "../../components/common/Toast";
 
 import {
@@ -16,18 +15,13 @@ import {
 } from "@heroicons/react/24/outline";
 
 export default function PatientDashboard() {
-  const { patients } = useAdmin();
+  const { profile: currentPatient, profileLoading } = usePatient();
   const { logout } = useAuth();
   const navigate = useNavigate();
 
-  // Active tab: "overview", "book", "profile"
   const location = useLocation();
   const activeTab = location.pathname.split("/")[2] || "overview";
 
-  // Simulated logged-in patient: Robert Paulson (userId = 301)
-  const currentPatient = patients.find((p) => p.userId === 301) || patients[0];
-
-  // Toast notification
   const [toast, setToast] = useState({
     show: false,
     message: "",
@@ -41,20 +35,25 @@ export default function PatientDashboard() {
     if (!window.confirm("Are you sure you want to log out from the portal?")) {
       return;
     }
-
     try {
       await api.post("/auth/logout");
     } catch (err) {
       console.error("Logout request failed:", err);
     }
-
     logout();
     navigate("/login");
   };
 
+  if (profileLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <p className="text-gray-500 text-sm">Loading patient portal...</p>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col font-sans antialiased text-gray-900">
-      {/* Toast Notification */}
       <Toast
         message={toast.message}
         type={toast.type}
@@ -117,12 +116,12 @@ export default function PatientDashboard() {
             </nav>
           </div>
 
-          {/* Profile footer with logout */}
+          {/* Sidebar footer */}
           <div className="p-4 border-t border-gray-100 flex items-center justify-between">
             <div className="flex items-center gap-2.5">
               <div className="h-9 w-9 rounded-full bg-teal-500 text-white flex items-center justify-center font-bold text-sm shadow-sm uppercase">
-                {currentPatient?.firstName[0] || "P"}
-                {currentPatient?.lastName[0] || "P"}
+                {currentPatient?.firstName?.[0] || "P"}
+                {currentPatient?.lastName?.[0] || "T"}
               </div>
               <div>
                 <p className="text-sm font-medium text-gray-800 leading-tight">
@@ -153,7 +152,6 @@ export default function PatientDashboard() {
                   : "Medical Records"}
             </h2>
 
-            {/* Mobile Tab Selector */}
             <div className="md:hidden flex gap-2">
               <select
                 value={activeTab}

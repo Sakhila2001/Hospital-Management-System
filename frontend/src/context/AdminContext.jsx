@@ -22,17 +22,18 @@ export const AdminProvider = ({ children }) => {
   const notifState = useNotifications();
   const { addNotification } = notifState;
 
-  const deptState = useDepartments({ user, authLoading, addNotification });
-  const docState = useDoctors({ user, authLoading, addNotification });
-  const recState = useReceptionists({ user, authLoading, addNotification });
-  const patState = usePatients({ user, authLoading, addNotification });
-  const apptState = useAppointments({
-    addNotification,
-    doctors: docState.doctors,
-    departments: deptState.departments,
-    patients: patState.patients,
-    setPatients: patState.setPatients,
-  });
+  // Only pass user to admin-only hooks when the logged-in user is actually an
+  // admin — this prevents /doctors, /receptionists, /patients, /appointments
+  // from being called (and returning 403) for doctor/patient/receptionist logins.
+  const isAdmin = !authLoading && user?.roles === "admin";
+  const adminUser = isAdmin ? user : null;
+  const adminAuthLoading = authLoading;
+
+  const deptState = useDepartments({ user: adminUser, authLoading: adminAuthLoading, addNotification });
+  const docState = useDoctors({ user: adminUser, authLoading: adminAuthLoading, addNotification });
+  const recState = useReceptionists({ user: adminUser, authLoading: adminAuthLoading, addNotification });
+  const patState = usePatients({ user: adminUser, authLoading: adminAuthLoading, addNotification });
+  const apptState = useAppointments({ addNotification, user: adminUser, authLoading: adminAuthLoading });
 
   const value = {
     ...notifState,

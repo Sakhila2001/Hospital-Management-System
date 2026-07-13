@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useAdmin } from "../../context/AdminContext";
+import { useDoctor } from "../../context/doctor/DoctorContext";
 import { useAuth } from "../../context/AuthContext";
 import api from "../../api/axios";
 import Logo from "../../assets/images/logo.png";
@@ -16,16 +16,13 @@ import {
 } from "@heroicons/react/24/outline";
 
 export default function DoctorDashboard() {
-  const { doctors } = useAdmin();
+  const { profile: currentDoctor, profileLoading } = useDoctor();
   const { logout } = useAuth();
   const navigate = useNavigate();
 
   // Active tab: "overview", "appointments", "schedule", "profile"
   const location = useLocation();
   const activeTab = location.pathname.split("/")[2] || "overview";
-
-  // Simulated logged-in doctor: Dr. John Doe (userId = 101)
-  const currentDoctor = doctors.find((d) => d.userId === 101) || doctors[0];
 
   // Toast notification
   const [toast, setToast] = useState({
@@ -57,6 +54,14 @@ export default function DoctorDashboard() {
     schedule: "My Schedule",
     profile: "My Profile",
   };
+
+  if (profileLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <p className="text-gray-500 text-sm">Loading doctor portal...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col font-sans antialiased text-gray-900">

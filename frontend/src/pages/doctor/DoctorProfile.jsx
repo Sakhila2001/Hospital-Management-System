@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useAdmin } from "../../context/AdminContext";
+import { useDoctor } from "../../context/doctor/DoctorContext";
 import Card from "../../components/common/Card";
 import Button from "../../components/common/Button";
 import Input from "../../components/common/Input";
@@ -7,39 +7,50 @@ import Modal from "../../components/common/Modal";
 import DoctorProfileView from "./DoctorProfileView";
 import { useOutletContext } from "react-router-dom";
 
-const GENDER_OPTIONS = ["Male", "Female", "Other"];
+// FIX: lowercase values to match backend ENUM validation
+const GENDER_OPTIONS = [
+  { label: "Male", value: "male" },
+  { label: "Female", value: "female" },
+  { label: "Other", value: "other" },
+];
 const DAY_OPTIONS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
 export default function DoctorProfile() {
-    const { doctor, triggerToast } = useOutletContext();
-  const { updateDoctor, departments = [] } = useAdmin();
+  const { triggerToast } = useOutletContext();
+
+  // Use DoctorContext — NOT AdminContext. AdminContext is admin-only and
+  // doesn't fetch departments/profile for non-admin users.
+  const { profile: doctor, updateProfile, departments = [] } = useDoctor();
 
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [formError, setFormError] = useState("");
 
   const buildFormFields = () => ({
-    firstName: doctor.firstName || "",
-    lastName: doctor.lastName || "",
-    specialization: doctor.specialization || "",
-    qualification: doctor.qualification || "",
-    experienceYears: doctor.experienceYears ?? "",
-    licenseNumber: doctor.licenseNumber || "",
-    phone: doctor.phone || "",
-    gender: doctor.gender || "",
-    dateOfBirth: doctor.dateOfBirth
+    firstName: doctor?.firstName || "",
+    lastName: doctor?.lastName || "",
+    specialization: doctor?.specialization || "",
+    qualification: doctor?.qualification || "",
+    experienceYears: doctor?.experienceYears ?? "",
+    licenseNumber: doctor?.licenseNumber || "",
+    phone: doctor?.phone || "",
+    // Normalize gender to lowercase to match ENUM values
+    gender: doctor?.gender ? doctor.gender.toLowerCase() : "",
+    dateOfBirth: doctor?.dateOfBirth
       ? String(doctor.dateOfBirth).slice(0, 10)
       : "",
-    address: doctor.address || "",
-    availableDays: doctor.availableDays || [],
-    availableTimeStart: doctor.availableTimeStart || "",
-    availableTimeEnd: doctor.availableTimeEnd || "",
-    bio: doctor.bio || "",
-    departmentId: doctor.departmentId || "",
+    address: doctor?.address || "",
+    availableDays: doctor?.availableDays || [],
+    availableTimeStart: doctor?.availableTimeStart || "",
+    availableTimeEnd: doctor?.availableTimeEnd || "",
+    bio: doctor?.bio || "",
+    departmentId: doctor?.departmentId || "",
   });
 
   const [formFields, setFormFields] = useState(buildFormFields);
 
   const updateField = (key) => (e) =>
-    setFormFields({ ...formFields, [key]: e.target.value });
+    setFormFields((prev) => ({ ...prev, [key]: e.target.value }));
 
   const toggleDay = (day) => {
     setFormFields((prev) => {
@@ -55,18 +66,24 @@ export default function DoctorProfile() {
 
   const handleEditClick = () => {
     setFormFields(buildFormFields());
+    setFormError("");
     setIsEditModalOpen(true);
   };
 
   const handleCancel = () => {
     setFormFields(buildFormFields());
+    setFormError("");
     setIsEditModalOpen(false);
   };
 
-  const handleSubmit = (e) => {
+  // FIX: async so we can await the API call and catch real errors
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    setSaving(true);
+    setFormError("");
+
     try {
-      updateDoctor(doctor.userId, {
+      await updateProfile({
         ...formFields,
         experienceYears:
           formFields.experienceYears === ""
@@ -75,17 +92,30 @@ export default function DoctorProfile() {
         departmentId: formFields.departmentId
           ? Number(formFields.departmentId)
           : undefined,
+        // Send empty string as undefined so backend ignores the field
+        gender: formFields.gender || undefined,
       });
-      triggerToast("Profile updated successfully!");
+      triggerToast("Profile updated successfully!", "success");
       setIsEditModalOpen(false);
     } catch (err) {
-      triggerToast(err.message, "error");
+      // Show the backend validation error inside the modal
+      setFormError(err.message || "Failed to update profile. Please try again.");
+    } finally {
+      setSaving(false);
     }
   };
 
+  if (!doctor) {
+    return (
+      <p className="text-sm text-gray-400 text-center py-10">
+        Loading profile...
+      </p>
+    );
+  }
+
   return (
     <>
-      <DoctorProfileView doctor={doctor} onEdit={handleEditClick} />
+      <DoctorProfileView doctor={doctor} departments={departments} onEdit={handleEditClick} />
 
       <Modal
         isOpen={isEditModalOpen}
@@ -93,6 +123,13 @@ export default function DoctorProfile() {
         title="Edit Doctor Profile"
       >
         <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Inline validation error banner */}
+          {formError && (
+            <div className="p-3 bg-red-50 border border-red-200 text-red-700 rounded-lg text-xs font-semibold">
+              {formError}
+            </div>
+          )}
+
           {/* Personal Info */}
           <div className="space-y-4">
             <h4 className="text-xs font-bold text-teal-700 uppercase border-b border-gray-100 pb-1">
@@ -124,6 +161,7 @@ export default function DoctorProfile() {
                 <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wide">
                   Gender
                 </label>
+                {/* FIX: values are lowercase — matching backend ENUM */}
                 <select
                   value={formFields.gender}
                   onChange={updateField("gender")}
@@ -131,8 +169,8 @@ export default function DoctorProfile() {
                 >
                   <option value="">Select...</option>
                   {GENDER_OPTIONS.map((g) => (
-                    <option key={g} value={g}>
-                      {g}
+                    <option key={g.value} value={g.value}>
+                      {g.label}
                     </option>
                   ))}
                 </select>
@@ -182,18 +220,24 @@ export default function DoctorProfile() {
                 <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wide">
                   Department
                 </label>
+                {/* FIX: now populated from DoctorContext departments (GET /departments) */}
                 <select
                   value={formFields.departmentId}
                   onChange={updateField("departmentId")}
                   className="mt-1 w-full bg-gray-50 border border-gray-300 rounded-lg p-2.5 text-xs sm:text-sm focus:ring-teal-500 focus:bg-white outline-none transition-all"
                 >
-                  <option value="">Select...</option>
+                  <option value="">Select department...</option>
                   {departments.map((d) => (
                     <option key={d.id} value={d.id}>
                       {d.name}
                     </option>
                   ))}
                 </select>
+                {departments.length === 0 && (
+                  <p className="text-[10px] text-gray-400 mt-1">
+                    No departments available
+                  </p>
+                )}
               </div>
             </div>
             <div>
@@ -213,7 +257,7 @@ export default function DoctorProfile() {
           {/* Availability */}
           <div className="space-y-4">
             <h4 className="text-xs font-bold text-teal-700 uppercase border-b border-gray-100 pb-1">
-              3. Availability & Schedule
+              3. Availability &amp; Schedule
             </h4>
             <div>
               <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wide mb-2">
@@ -270,6 +314,7 @@ export default function DoctorProfile() {
               type="button"
               variant="secondary"
               onClick={handleCancel}
+              disabled={saving}
               className="rounded-full border border-gray-300 text-gray-600 hover:bg-gray-50 px-5 py-2.5 text-sm font-semibold transition-colors cursor-pointer"
             >
               Cancel
@@ -277,9 +322,10 @@ export default function DoctorProfile() {
             <Button
               type="submit"
               variant="primary"
-              className="flex items-center justify-center gap-2 rounded-full bg-teal-600 hover:bg-teal-500 text-white px-5 py-2.5 text-sm font-semibold shadow-xs transition-colors cursor-pointer"
+              disabled={saving}
+              className="flex items-center justify-center gap-2 rounded-full bg-teal-600 hover:bg-teal-500 disabled:opacity-60 disabled:cursor-not-allowed text-white px-5 py-2.5 text-sm font-semibold shadow-xs transition-colors cursor-pointer"
             >
-              Save Profile
+              {saving ? "Saving..." : "Save Profile"}
             </Button>
           </div>
         </form>
