@@ -6,21 +6,35 @@ import { PlusIcon, PencilIcon, TrashIcon } from "@heroicons/react/24/outline";
 export default function Departments() {
   const { onOpenCreateModal, onOpenEditModal, triggerToast } =
     useOutletContext();
-  const { departments, toggleDepartmentStatus, deleteDepartment } = useAdmin();
+  const {
+    departments,
+    departmentsLoading,
+    toggleDepartmentStatus,
+    deleteDepartment,
+  } = useAdmin();
   const [showInactiveDepts, setShowInactiveDepts] = useState(true);
 
-  const handleDeleteDepartment = (id, name) => {
+  const handleDeleteDepartment = async (id, name) => {
     if (
       window.confirm(
         `Are you sure you want to delete the "${name}" department?`,
       )
     ) {
       try {
-        deleteDepartment(id);
+        await deleteDepartment(id);
         triggerToast("Department deleted successfully");
       } catch (err) {
         triggerToast(err.message, "error");
       }
+    }
+  };
+
+  const handleToggleStatus = async (id) => {
+    try {
+      await toggleDepartmentStatus(id);
+      triggerToast(`Department status toggled`);
+    } catch (err) {
+      triggerToast(err.message, "error");
     }
   };
 
@@ -52,7 +66,11 @@ export default function Departments() {
           New Department
         </button>
       </div>
-
+      {departmentsLoading && (
+        <div className="text-center py-8 text-gray-500 text-sm">
+          Loading departments...
+        </div>
+      )}
       {/* Departments Table */}
       <div className="bg-white rounded-xl border border-gray-200 shadow-xs overflow-hidden">
         <div className="overflow-x-auto">
@@ -101,10 +119,7 @@ export default function Departments() {
                   </td>
                   <td className="px-6 py-4 text-right flex items-center justify-end gap-2">
                     <button
-                      onClick={() => {
-                        toggleDepartmentStatus(dept.id);
-                        triggerToast(`Department status toggled`);
-                      }}
+                      onClick={() => handleToggleStatus(dept.id)}
                       className="px-2.5 py-1 text-xs font-semibold rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-800 border border-transparent cursor-pointer"
                       title="Toggle Status"
                     >

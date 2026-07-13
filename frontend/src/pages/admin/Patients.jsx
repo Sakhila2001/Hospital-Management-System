@@ -12,18 +12,22 @@ import {
 export default function Patients() {
   const { onOpenCreateModal, onOpenEditModal, onOpenViewModal, triggerToast } =
     useOutletContext();
-  const { patients, deletePatient } = useAdmin();
+  const { patients, patientsLoading, deletePatient } = useAdmin();
   const [searchTerm, setSearchTerm] = useState("");
 
-  const handleDeletePatient = (userId, name) => {
+  const handleDeletePatient = async (userId, name) => {
     if (window.confirm(`Are you sure you want to delete patient ${name}?`)) {
-      deletePatient(userId);
-      triggerToast("Patient profile deleted successfully");
+      try {
+        await deletePatient(userId);
+        triggerToast("Patient profile deleted successfully");
+      } catch (err) {
+        triggerToast(err.message, "error");
+      }
     }
   };
 
   const filteredPatients = patients.filter((pat) => {
-    const name = `${pat.firstName} ${pat.lastName}`.toLowerCase();
+    const name = `${pat.firstName || ""} ${pat.lastName || ""}`.toLowerCase();
     const city = (pat.city || "").toLowerCase();
     const phone = (pat.phone || "").toLowerCase();
     const term = searchTerm.toLowerCase();
@@ -54,6 +58,12 @@ export default function Patients() {
         </button>
       </div>
 
+      {patientsLoading && (
+        <div className="text-center py-8 text-gray-500 text-sm">
+          Loading patients...
+        </div>
+      )}
+
       {/* Patients Table */}
       <div className="bg-white rounded-xl border border-gray-200 shadow-xs overflow-hidden">
         <div className="overflow-x-auto scrollbar-hide">
@@ -68,33 +78,18 @@ export default function Patients() {
             </colgroup>
             <thead className="text-xs text-gray-700 uppercase bg-gray-50/75 border-b border-gray-200">
               <tr>
-                <th scope="col" className="px-6 py-3">
-                  Patient Name
-                </th>
-                <th scope="col" className="px-6 py-3">
-                  Phone
-                </th>
-                <th scope="col" className="px-6 py-3">
-                  Blood Group
-                </th>
-                <th scope="col" className="px-6 py-3">
-                  Gender / DOB
-                </th>
-                <th scope="col" className="px-6 py-3">
-                  City
-                </th>
-                <th scope="col" className="px-6 py-3 text-right">
-                  Actions
-                </th>
+                <th scope="col" className="px-6 py-3">Patient Name</th>
+                <th scope="col" className="px-6 py-3">Phone</th>
+                <th scope="col" className="px-6 py-3">Blood Group</th>
+                <th scope="col" className="px-6 py-3">Gender / DOB</th>
+                <th scope="col" className="px-6 py-3">City</th>
+                <th scope="col" className="px-6 py-3 text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
               {filteredPatients.map((pat) => (
                 <tr key={pat.id} className="bg-white hover:bg-gray-50/50">
-                  <th
-                    scope="row"
-                    className="px-6 py-4 font-semibold text-gray-900"
-                  >
+                  <th scope="row" className="px-6 py-4 font-semibold text-gray-900">
                     {pat.firstName} {pat.lastName}
                   </th>
                   <td className="px-6 py-4">{pat.phone || "N/A"}</td>
@@ -104,7 +99,7 @@ export default function Patients() {
                     </span>
                   </td>
                   <td className="px-6 py-4 capitalize text-xs">
-                    {pat.gender} &bull; {pat.dateOfBirth || "N/A"}
+                    {pat.gender || "N/A"} &bull; {pat.dateOfBirth || "N/A"}
                   </td>
                   <td className="px-6 py-4">{pat.city || "N/A"}</td>
                   <td className="px-6 py-4 text-right">
@@ -142,7 +137,7 @@ export default function Patients() {
             </tbody>
           </table>
         </div>
-        {filteredPatients.length === 0 && (
+        {!patientsLoading && filteredPatients.length === 0 && (
           <div className="p-10 text-center text-gray-400 font-medium">
             No matching patients found.
           </div>

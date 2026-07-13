@@ -4,6 +4,7 @@ import {
   deleteDoctorById,
   getAllDoctors,
   getDoctorByUserId,
+  toggleDoctorAvailability,
   updateDoctorProfile,
 } from "./doctor.controller.js";
 import {
@@ -48,6 +49,12 @@ doctorRouter.put(
   authMiddleware,
   authorizeRoles("admin", "doctor"),
   updateDoctorProfile,
+);
+doctorRouter.patch(
+  "/:userId/availability",
+  authMiddleware,
+  authorizeRoles("admin", "doctor"),
+  toggleDoctorAvailability,
 );
 doctorRouter.delete(
   "/:userId",

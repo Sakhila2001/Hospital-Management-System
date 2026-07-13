@@ -147,17 +147,17 @@ export default function AdminDashboard() {
     setModal({ show: true, type, action: "view", data: entity });
   };
 
-  const handleFormSubmit = (e) => {
+  const handleFormSubmit = async (e) => {
     e.preventDefault();
     try {
       if (modal.type === "department") {
         if (!formFields.name.trim())
           throw new Error("Department name is required");
         if (modal.action === "create") {
-          createDepartment(formFields);
+          await createDepartment(formFields);
           triggerToast("Department created successfully!");
         } else {
-          updateDepartment(modal.data.id, formFields);
+          await updateDepartment(modal.data.id, formFields);
           triggerToast("Department updated successfully!");
         }
       } else if (modal.type === "doctor") {
@@ -177,10 +177,10 @@ export default function AdminDashboard() {
             throw new Error("Specialization is required");
           if (!formFields.departmentId)
             throw new Error("Please assign a department");
-          createDoctor(formFields);
+          await createDoctor(formFields);
           triggerToast("Doctor created successfully!");
         } else {
-          updateDoctor(modal.data.userId, formFields);
+          await updateDoctor(modal.data.userId, formFields);
           triggerToast("Doctor profile updated successfully!");
         }
       } else if (modal.type === "receptionist") {
@@ -198,10 +198,10 @@ export default function AdminDashboard() {
           }
           if (!formFields.departmentId)
             throw new Error("Please assign a department");
-          createReceptionist(formFields);
+          await createReceptionist(formFields);
           triggerToast("Receptionist created successfully!");
         } else {
-          updateReceptionist(modal.data.userId, formFields);
+          await updateReceptionist(modal.data.userId, formFields);
           triggerToast("Receptionist profile updated successfully!");
         }
       } else if (modal.type === "patient") {
@@ -217,10 +217,10 @@ export default function AdminDashboard() {
           if (formFields.password !== formFields.confirmPassword) {
             throw new Error("Passwords do not match");
           }
-          createPatient(formFields);
+          await createPatient(formFields);
           triggerToast("Patient profile created successfully!");
         } else {
-          updatePatient(modal.data.userId, formFields);
+          await updatePatient(modal.data.userId, formFields);
           triggerToast("Patient profile updated successfully!");
         }
       }
@@ -931,10 +931,15 @@ export default function AdminDashboard() {
                     </label>
                     <input
                       type="text"
+                      inputMode="numeric"
+                      maxLength={10}
                       value={formFields.phone || ""}
-                      onChange={(e) =>
-                        setFormFields({ ...formFields, phone: e.target.value })
-                      }
+                      onChange={(e) => {
+                        const digitsOnly = e.target.value
+                          .replace(/\D/g, "")
+                          .slice(0, 10);
+                        setFormFields({ ...formFields, phone: digitsOnly });
+                      }}
                       className="mt-1 w-full bg-gray-50 border border-gray-300 rounded-lg p-2 text-xs focus:ring-teal-500"
                     />
                   </div>
@@ -1247,10 +1252,15 @@ export default function AdminDashboard() {
                     </label>
                     <input
                       type="text"
+                      inputMode="numeric"
+                      maxLength={10}
                       value={formFields.phone || ""}
-                      onChange={(e) =>
-                        setFormFields({ ...formFields, phone: e.target.value })
-                      }
+                      onChange={(e) => {
+                        const digitsOnly = e.target.value
+                          .replace(/\D/g, "")
+                          .slice(0, 10);
+                        setFormFields({ ...formFields, phone: digitsOnly });
+                      }}
                       className="mt-1 w-full bg-gray-50 border border-gray-300 rounded-lg p-2 text-xs focus:ring-teal-500"
                     />
                   </div>
@@ -1432,10 +1442,15 @@ export default function AdminDashboard() {
                     </label>
                     <input
                       type="text"
+                      inputMode="numeric"
+                      maxLength={10}
                       value={formFields.phone || ""}
-                      onChange={(e) =>
-                        setFormFields({ ...formFields, phone: e.target.value })
-                      }
+                      onChange={(e) => {
+                        const digitsOnly = e.target.value
+                          .replace(/\D/g, "")
+                          .slice(0, 10);
+                        setFormFields({ ...formFields, phone: digitsOnly });
+                      }}
                       className="mt-1 w-full bg-gray-50 border border-gray-300 rounded-lg p-2 text-xs focus:ring-teal-500"
                     />
                   </div>
@@ -1554,13 +1569,18 @@ export default function AdminDashboard() {
                     </label>
                     <input
                       type="text"
+                      inputMode="numeric"
+                      maxLength={10}
                       value={formFields.emergencyContactPhone || ""}
-                      onChange={(e) =>
+                      onChange={(e) => {
+                        const digitsOnly = e.target.value
+                          .replace(/\D/g, "")
+                          .slice(0, 10);
                         setFormFields({
                           ...formFields,
-                          emergencyContactPhone: e.target.value,
-                        })
-                      }
+                          emergencyContactPhone: digitsOnly,
+                        });
+                      }}
                       className="mt-1 w-full bg-gray-50 border border-gray-300 rounded-lg p-1.5 text-xs focus:ring-teal-500"
                     />
                   </div>

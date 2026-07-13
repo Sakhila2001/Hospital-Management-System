@@ -4,6 +4,7 @@ import {
   getAllDoctorsService,
   updateDoctorProfileService,
   getDoctorByUserIdService,
+  toggleDoctorAvailabilityService,
 } from "./doctor.service.js";
 
 export const adminCreateDoctor = async (req, res) => {
@@ -31,7 +32,6 @@ export const getAllDoctors = async (req, res) => {
     return res.status(500).json({ success: false, message: error.message });
   }
 };
-
 
 export const getDoctorByUserId = async (req, res) => {
   try {
@@ -84,5 +84,23 @@ export const deleteDoctorById = async (req, res) => {
     return res.status(200).json({ success: true, message });
   } catch (error) {
     return res.status(404).json({ success: false, message: error.message });
+  }
+};
+export const toggleDoctorAvailability = async (req, res) => {
+  try {
+    // Admin can pass a userId param; doctor toggles their own availability
+    const targetUserId =
+      req.user.roles === "admin" && req.params.userId
+        ? parseInt(req.params.userId)
+        : req.user.id;
+
+    const { doctor } = await toggleDoctorAvailabilityService(targetUserId);
+    return res.status(200).json({
+      success: true,
+      message: `Doctor marked as ${doctor.isAvailable ? "available" : "unavailable"} successfully`,
+      data: { doctor },
+    });
+  } catch (error) {
+    return res.status(400).json({ success: false, message: error.message });
   }
 };

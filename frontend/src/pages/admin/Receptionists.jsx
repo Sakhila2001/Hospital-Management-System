@@ -6,7 +6,8 @@ import { PlusIcon, PencilIcon, TrashIcon, MagnifyingGlassIcon } from "@heroicons
 export default function Receptionists() {
   const { onOpenCreateModal, onOpenEditModal, triggerToast } =
     useOutletContext();
-  const { receptionists, departments, deleteReceptionist } = useAdmin();
+  const { receptionists, receptionistsLoading, departments, deleteReceptionist } =
+    useAdmin();
   const [searchTerm, setSearchTerm] = useState("");
 
   const getDeptName = (id) => {
@@ -14,23 +15,27 @@ export default function Receptionists() {
     return dept ? dept.name : "N/A";
   };
 
-  const handleDeleteReceptionist = (userId, name) => {
+  const handleDeleteReceptionist = async (userId, name) => {
     if (window.confirm(`Are you sure you want to delete receptionist ${name}?`)) {
-      deleteReceptionist(userId);
-      triggerToast("Receptionist profile deleted successfully");
+      try {
+        await deleteReceptionist(userId);
+        triggerToast("Receptionist profile deleted successfully");
+      } catch (err) {
+        triggerToast(err.message, "error");
+      }
     }
   };
 
-  const filteredReceptionists = receptionists.filter(rec => {
-    const name = `${rec.firstName} ${rec.lastName}`.toLowerCase();
-    const code = rec.employeeCode.toLowerCase();
+  const filteredReceptionists = receptionists.filter((rec) => {
+    const name = `${rec.firstName || ""} ${rec.lastName || ""}`.toLowerCase();
+    const code = (rec.employeeCode || "").toLowerCase();
     const term = searchTerm.toLowerCase();
     return name.includes(term) || code.includes(term);
   });
 
   return (
     <div className="space-y-4">
-      
+
       {/* Actions Bar */}
       <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
         <div className="relative w-full sm:w-80">
@@ -53,6 +58,12 @@ export default function Receptionists() {
         </button>
       </div>
 
+      {receptionistsLoading && (
+        <div className="text-center py-8 text-gray-500 text-sm">
+          Loading receptionists...
+        </div>
+      )}
+
       {/* Receptionists List Table */}
       <div className="bg-white rounded-xl border border-gray-200 shadow-xs overflow-hidden">
         <div className="overflow-x-auto">
@@ -74,7 +85,7 @@ export default function Receptionists() {
                   <th scope="row" className="px-6 py-4 font-semibold text-gray-900 whitespace-nowrap">
                     {rec.firstName} {rec.lastName}
                   </th>
-                  <td className="px-6 py-4 font-mono text-xs">{rec.employeeCode}</td>
+                  <td className="px-6 py-4 font-mono text-xs">{rec.employeeCode || "N/A"}</td>
                   <td className="px-6 py-4">{getDeptName(rec.departmentId)}</td>
                   <td className="px-6 py-4">
                     <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold ${
@@ -82,11 +93,11 @@ export default function Receptionists() {
                       rec.shift === "Evening" ? "bg-orange-50 text-orange-700" :
                       "bg-indigo-50 text-indigo-700"
                     }`}>
-                      {rec.shift}
+                      {rec.shift || "N/A"}
                     </span>
                   </td>
                   <td className="px-6 py-4">{rec.phone || "N/A"}</td>
-                  <td className="px-6 py-4">{rec.joinedDate}</td>
+                  <td className="px-6 py-4">{rec.joinedDate || "N/A"}</td>
                   <td className="px-6 py-4 text-right flex items-center justify-end gap-2">
                     <button
                       onClick={() => onOpenEditModal("receptionist", rec)}
@@ -108,7 +119,7 @@ export default function Receptionists() {
             </tbody>
           </table>
         </div>
-        {filteredReceptionists.length === 0 && (
+        {!receptionistsLoading && filteredReceptionists.length === 0 && (
           <div className="p-10 text-center text-gray-400 font-medium">
             No matching receptionists found.
           </div>

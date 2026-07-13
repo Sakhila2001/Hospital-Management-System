@@ -100,9 +100,7 @@ const validateDoctorFitsAppointment = async ({
   }
   const clash = await Appointment.findOne({ where: clashWhere });
   if (clash)
-    throw new Error(
-      "Doctor already has an appointment at this date and time",
-    );
+    throw new Error("Doctor already has an appointment at this date and time");
 
   return doctor;
 };
@@ -180,7 +178,9 @@ export const createAppointmentService = async (data, requester) => {
 
   //  Department is active (only relevant when receptionist supplied one)
   if (departmentId) {
-    const department = await Department.findOne({ where: { id: departmentId } });
+    const department = await Department.findOne({
+      where: { id: departmentId },
+    });
     if (!department) throw new Error("Department not found");
     if (!department.isActive) throw new Error("Department is not active");
   }
@@ -381,7 +381,10 @@ export const assignDoctorAndDepartmentService = async (
     if (!department.isActive) throw new Error("Department is not active");
 
     // A receptionist can only route into their own department
-    if (roles === "receptionist" && receptionist.departmentId !== departmentId) {
+    if (
+      roles === "receptionist" &&
+      receptionist.departmentId !== departmentId
+    ) {
       throw new Error("Access denied: department mismatch");
     }
 

@@ -390,3 +390,23 @@ export const deleteDoctorService = async (userId) => {
 
   return { message: "Doctor deleted successfully" };
 };
+
+// ─ Toggle Doctor Availability ─
+
+export const toggleDoctorAvailabilityService = async (userId) => {
+  const doctor = await Doctor.findOne({
+    where: { userId },
+    include: [
+      {
+        model: User,
+        attributes: ["id", "firstName", "lastName", "isActive"],
+      },
+    ],
+  });
+
+  if (!doctor) throw new Error("Doctor not found");
+
+  await doctor.update({ isAvailable: !doctor.isAvailable });
+
+  return { doctor };
+};

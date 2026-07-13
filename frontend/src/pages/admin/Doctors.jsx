@@ -1,14 +1,25 @@
 import React, { useState } from "react";
 import { useOutletContext } from "react-router-dom";
 import { useAdmin } from "../../context/AdminContext";
-import { PlusIcon, PencilIcon, TrashIcon, EyeIcon, MagnifyingGlassIcon } from "@heroicons/react/24/outline";
+import {
+  PlusIcon,
+  PencilIcon,
+  TrashIcon,
+  EyeIcon,
+  MagnifyingGlassIcon,
+} from "@heroicons/react/24/outline";
 
 export default function Doctors() {
   const { onOpenCreateModal, onOpenEditModal, onOpenViewModal, triggerToast } =
     useOutletContext();
-    
-  
-  const { doctors, departments, deleteDoctor } = useAdmin();
+
+  const {
+    doctors,
+    doctorsLoading,
+    departments,
+    deleteDoctor,
+    toggleDoctorAvailability,
+  } = useAdmin();
   const [searchTerm, setSearchTerm] = useState("");
 
   const getDeptName = (id) => {
@@ -16,23 +27,35 @@ export default function Doctors() {
     return dept ? dept.name : "N/A";
   };
 
-  const handleDeleteDoctor = (userId, name) => {
+  const handleDeleteDoctor = async (userId, name) => {
     if (window.confirm(`Are you sure you want to delete Dr. ${name}?`)) {
-      deleteDoctor(userId);
-      triggerToast("Doctor profile deleted successfully");
+      try {
+        await deleteDoctor(userId);
+        triggerToast("Doctor profile deleted successfully");
+      } catch (err) {
+        triggerToast(err.message, "error");
+      }
+    }
+  };
+  const handleToggleAvailability = async (userId) => {
+    try {
+      await toggleDoctorAvailability(userId);
+      triggerToast("Doctor availability toggled");
+    } catch (err) {
+      triggerToast(err.message, "error");
     }
   };
 
-  const filteredDoctors = doctors.filter(doc => {
-    const fullName = `${doc.firstName} ${doc.lastName}`.toLowerCase();
-    const spec = doc.specialization.toLowerCase();
+  const filteredDoctors = doctors.filter((doc) => {
+    const fullName =
+      `${doc.firstName || ""} ${doc.lastName || ""}`.toLowerCase();
+    const spec = (doc.specialization || "").toLowerCase();
     const term = searchTerm.toLowerCase();
     return fullName.includes(term) || spec.includes(term);
   });
 
   return (
     <div className="space-y-4">
-      
       {/* Search / Add Bar */}
       <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
         <div className="relative w-full sm:w-80">
@@ -55,34 +78,60 @@ export default function Doctors() {
         </button>
       </div>
 
+      {doctorsLoading && (
+        <div className="text-center py-8 text-gray-500 text-sm">
+          Loading doctors...
+        </div>
+      )}
+
       {/* Doctors Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredDoctors.map((doc) => (
-          <div key={doc.id} className="bg-white rounded-xl border border-gray-200 shadow-xs p-5 flex flex-col justify-between space-y-4">
+          <div
+            key={doc.id}
+            className="bg-white rounded-xl border border-gray-200 shadow-xs p-5 flex flex-col justify-between space-y-4"
+          >
             <div>
-              {/* Card Header */}
               <div className="flex items-start justify-between">
                 <div>
-                  <h3 className="text-base font-bold text-gray-800">Dr. {doc.firstName} {doc.lastName}</h3>
-                  <p className="text-xs text-teal-600 font-semibold">{doc.specialization} &bull; {getDeptName(doc.departmentId)}</p>
+                  <h3 className="text-base font-bold text-gray-800">
+                    Dr. {doc.firstName} {doc.lastName}
+                  </h3>
+                  <p className="text-xs text-teal-600 font-semibold">
+                    {doc.specialization} &bull; {getDeptName(doc.departmentId)}
+                  </p>
                 </div>
-                <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
-                  doc.isAvailable ? "bg-green-50 text-green-700" : "bg-gray-100 text-gray-650"
-                }`}>
-                  {doc.isAvailable ? "Available" : "Away"}
-                </span>
+                <button
+                  onClick={() => handleToggleAvailability(doc.userId)}
+                  className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider cursor-pointer transition-colors ${
+                    doc.isAvailable
+                      ? "bg-green-50 text-green-700 hover:bg-green-100"
+                      : "bg-gray-100 text-gray-650 hover:bg-gray-200"
+                  }`}
+                  title="Toggle availability"
+                >
+                  {doc.isAvailable ? "Available" : "Not Available"}
+                </button>
               </div>
 
-              {/* Info Rows */}
               <div className="mt-4 space-y-2 text-xs text-gray-500">
-                <p><b>License:</b> {doc.licenseNumber}</p>
-                <p><b>Experience:</b> {doc.experienceYears} Years</p>
-                <p><b>Days:</b> {doc.availableDays.join(", ") || "Not set"}</p>
-                <p><b>Hours:</b> {doc.availableTimeStart} - {doc.availableTimeEnd}</p>
+                <p>
+                  <b>License:</b> {doc.licenseNumber || "Not set"}
+                </p>
+                <p>
+                  <b>Experience:</b> {doc.experienceYears ?? 0} Years
+                </p>
+                <p>
+                  <b>Days:</b>{" "}
+                  {(doc.availableDays || []).join(", ") || "Not set"}
+                </p>
+                <p>
+                  <b>Hours:</b> {doc.availableTimeStart || "--"} -{" "}
+                  {doc.availableTimeEnd || "--"}
+                </p>
               </div>
             </div>
 
-            {/* Card Actions */}
             <div className="flex items-center justify-between border-t border-gray-100 pt-3 mt-4">
               <button
                 onClick={() => onOpenViewModal("doctor", doc)}
@@ -91,7 +140,7 @@ export default function Doctors() {
                 <EyeIcon className="h-4 w-4" />
                 View Profile
               </button>
-              
+
               <div className="flex gap-2">
                 <button
                   onClick={() => onOpenEditModal("doctor", doc)}
@@ -101,7 +150,12 @@ export default function Doctors() {
                   <PencilIcon className="h-4 w-4" />
                 </button>
                 <button
-                  onClick={() => handleDeleteDoctor(doc.userId, `${doc.firstName} ${doc.lastName}`)}
+                  onClick={() =>
+                    handleDeleteDoctor(
+                      doc.userId,
+                      `${doc.firstName} ${doc.lastName}`,
+                    )
+                  }
                   className="p-1 text-red-500 hover:bg-red-50 rounded-lg border border-gray-100 cursor-pointer"
                   title="Delete Doctor"
                 >
@@ -113,12 +167,11 @@ export default function Doctors() {
         ))}
       </div>
 
-      {filteredDoctors.length === 0 && (
+      {!doctorsLoading && filteredDoctors.length === 0 && (
         <div className="p-10 text-center text-gray-400 font-medium bg-white rounded-xl border border-gray-200">
           No matching doctors found.
         </div>
       )}
-
     </div>
   );
 }
