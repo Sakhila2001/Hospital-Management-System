@@ -20,7 +20,7 @@ export default function ContactSection({ triggerToast }) {
   };
 
   return (
-    <section id="contact" className="py-20 bg-white border-t border-gray-150">
+    <section id="contact" className="py-20 bg-white">
       <div className="max-w-7xl mx-auto px-6 lg:px-8 space-y-12">
         
         <div className="text-center space-y-3">

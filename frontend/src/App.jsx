@@ -15,6 +15,13 @@ import BookingWidget from "./components/landing/BookingWidget";
 import DoctorDashboard from "./pages/doctor/DoctorDashboard";
 import ReceptionistDashboard from "./pages/receptionist/ReceptionistDashboard";
 import PatientDashboard from "./pages/patient/PatientDashboard";
+
+// Public Pages
+import ServicesPage from "./pages/public/Services";
+import DepartmentsPage from "./pages/public/Departments";
+import AboutPage from "./pages/public/About";
+import ContactPage from "./pages/public/Contact";
+
 // Admin sub-views
 import Overview from "./pages/admin/Overview";
 import Appointments from "./pages/admin/Appointments";
@@ -45,6 +52,10 @@ function App() {
     <AdminProvider>
       <Routes>
         <Route path="/" element={<LandingPage />} />
+        <Route path="/services" element={<ServicesPage />} />
+        <Route path="/departments" element={<DepartmentsPage />} />
+        <Route path="/about" element={<AboutPage />} />
+        <Route path="/contact" element={<ContactPage />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/register/staff" element={<StaffRegister />} />
