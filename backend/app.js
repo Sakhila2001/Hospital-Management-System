@@ -16,6 +16,8 @@ const app = express();
 const allowedOrigins = [
   "http://localhost:5173",
   "https://hms.vercel.app",
+  "https://hospital-management-system-eta-gules.vercel.app",
+  ...(process.env.FRONTEND_URL ? [process.env.FRONTEND_URL] : []),
 ];
 
 const corsOrigin = (origin, callback) => {

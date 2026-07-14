@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import axios from "axios";
 
-import api, { setAccessToken, setLogoutHandler } from "../api/axios";
+import api, { setAccessToken, setLogoutHandler, API_BASE } from "../api/axios";
 
 const AuthContext = createContext(null);
 
@@ -20,7 +20,7 @@ export function AuthProvider({ children }) {
     const tryRestoreSession = async () => {
       try {
         const res = await axios.post(
-          `${import.meta.env.VITE_API_URL || "http://localhost:5900/api"}/auth/refresh-token`,
+          `${API_BASE}/auth/refresh-token`,
           {},
           { withCredentials: true },
         );
