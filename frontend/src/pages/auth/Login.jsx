@@ -3,12 +3,14 @@ import { Link, useNavigate } from "react-router-dom";
 import Logo from "../../assets/images/logo.png";
 import { useAuth } from "../../context/AuthContext";
 import api from "../../api/axios";
+import { EyeIcon, EyeSlashIcon } from "@heroicons/react/24/outline";
 
 export default function Login() {
   const [formData, setFormData] = useState({
     email: "",
     password: "",
   });
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const navigate = useNavigate();
 
@@ -152,21 +154,34 @@ export default function Login() {
               />
             </div>
 
-            {/* Password */}
-            <div>
-              <label className="block text-[10px] font-bold text-gray-500 uppercase">
-                Password
-              </label>
-              <input
-                type="password"
-                name="password"
-                value={formData.password}
-                onChange={handleChange}
-                placeholder="Enter password"
-                className="mt-1 w-full bg-gray-50 border border-gray-300/80 rounded-lg p-2.5 text-xs sm:text-sm focus:ring-teal-500 focus:bg-white outline-none"
-                required
-              />
-            </div>
+             {/* Password */}
+             <div>
+               <label className="block text-[10px] font-bold text-gray-500 uppercase">
+                 Password
+               </label>
+               <div className="relative mt-1">
+                 <input
+                   type={showPassword ? "text" : "password"}
+                   name="password"
+                   value={formData.password}
+                   onChange={handleChange}
+                   placeholder="Enter password"
+                   className="w-full bg-gray-50 border border-gray-300/80 rounded-lg p-2.5 pr-10 text-xs focus:ring-teal-500 focus:bg-white outline-none"
+                   required
+                 />
+                 <button
+                   type="button"
+                   onClick={() => setShowPassword(!showPassword)}
+                   className="absolute inset-y-0 right-3 flex items-center text-gray-500 hover:text-teal-600 cursor-pointer"
+                 >
+                   {showPassword ? (
+                     <EyeSlashIcon className="h-5 w-5" />
+                   ) : (
+                     <EyeIcon className="h-5 w-5" />
+                   )}
+                 </button>
+               </div>
+             </div>
 
             {/* Remember me & Forgot Pass */}
             <div className="flex items-center justify-between text-xs text-gray-500 font-medium">
