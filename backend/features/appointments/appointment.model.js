@@ -19,7 +19,7 @@ const Appointment = sequelize.define(
     },
     departmentId: {
       type: DataTypes.INTEGER,
-      allowNull: false,
+      allowNull: true,
       references: {
         model: "departments",
         key: "id",
@@ -27,11 +27,16 @@ const Appointment = sequelize.define(
     },
     doctorId: {
       type: DataTypes.INTEGER,
-      allowNull: false,
+      allowNull: true,
       references: {
         model: "doctors",
         key: "id",
       },
+    },
+    type: {
+      type: DataTypes.ENUM("new_patient", "follow_up", "consultation", "emergency"),
+      allowNull: false,
+      defaultValue: "consultation",
     },
     createdBy: {
       type: DataTypes.INTEGER, // receptionist id, nullable if self-booked
@@ -68,6 +73,38 @@ const Appointment = sequelize.define(
     },
     cancelledAt: {
       type: DataTypes.DATE,
+    },
+    rescheduleRequested: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false,
+    },
+    proposedDate: {
+      type: DataTypes.DATEONLY,
+      allowNull: true,
+    },
+    proposedTime: {
+      type: DataTypes.TIME,
+      allowNull: true,
+    },
+    proposedDoctorId: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      references: {
+        model: "doctors",
+        key: "id",
+      },
+    },
+    proposedDepartmentId: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      references: {
+        model: "departments",
+        key: "id",
+      },
+    },
+    rescheduleReason: {
+      type: DataTypes.TEXT,
+      allowNull: true,
     },
   },
   {

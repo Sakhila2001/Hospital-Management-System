@@ -46,8 +46,20 @@ const validateReceptionistFields = ({
   if (employeeCode && employeeCode.trim().length < 2) {
     throw new Error("Employee code must be at least 2 characters");
   }
-  if (joinedDate && isNaN(Date.parse(joinedDate))) {
-    throw new Error("Invalid joinedDate format");
+  if (joinedDate) {
+    const parsedDate = new Date(joinedDate);
+
+    if (isNaN(parsedDate.getTime())) {
+      throw new Error("Invalid joinedDate format");
+    }
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    parsedDate.setHours(0, 0, 0, 0);
+
+    if (parsedDate > today) {
+      throw new Error("Joined date cannot be in the future");
+    }
   }
 };
 

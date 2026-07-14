@@ -31,3 +31,10 @@ Appointment.belongsTo(Department, { foreignKey: "departmentId" });
 
 Receptionist.hasMany(Appointment, { foreignKey: "createdBy" });
 Appointment.belongsTo(Receptionist, { foreignKey: "createdBy" });
+
+Doctor.belongsTo(Department, { foreignKey: "departmentId", as: "department" });
+Department.hasMany(Doctor, { foreignKey: "departmentId", as: "doctors" });
+
+// Proposed Reschedules
+Appointment.belongsTo(Doctor, { foreignKey: "proposedDoctorId", as: "ProposedDoctor" });
+Appointment.belongsTo(Department, { foreignKey: "proposedDepartmentId", as: "ProposedDepartment" });

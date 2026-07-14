@@ -13,24 +13,9 @@ import {
 
 const patientRouter = Router();
 
-patientRouter.get(
-  "/",
-  authMiddleware,
-  authorizeRoles("admin", "receptionist", "doctor"),
-  getAllPatients,
-);
-patientRouter.get(
-  "/:userId",
-  authMiddleware,
-  authorizeRoles("admin", "receptionist", "doctor", "patient"),
-  getPatientByUserId,
-);
-patientRouter.post(
-  "/admin",
-  authMiddleware,
-  authorizeRoles("admin"),
-  adminCreatePatient,
-);
+// IMPORTANT: /me/profile and /admin MUST come before /:userId so Express does
+// not treat the literal string "me" or "admin" as a userId parameter.
+
 patientRouter.get(
   "/me/profile",
   authMiddleware,
@@ -42,6 +27,25 @@ patientRouter.put(
   authMiddleware,
   authorizeRoles("patient"),
   updatePatientProfile,
+);
+patientRouter.post(
+  "/admin",
+  authMiddleware,
+  authorizeRoles("admin"),
+  adminCreatePatient,
+);
+
+patientRouter.get(
+  "/",
+  authMiddleware,
+  authorizeRoles("admin", "receptionist", "doctor"),
+  getAllPatients,
+);
+patientRouter.get(
+  "/:userId",
+  authMiddleware,
+  authorizeRoles("admin", "receptionist", "doctor", "patient"),
+  getPatientByUserId,
 );
 patientRouter.put(
   "/:userId",

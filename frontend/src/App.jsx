@@ -1,20 +1,135 @@
-import { useState } from "react";
 import "./App.css";
+import ProtectedRoute from "./components/ProtectedRoute";
 
-import { Route, Routes } from "react-router-dom";
+import { Route, Routes, Navigate } from "react-router-dom";
 import LandingPage from "./components/LandingPage";
 import Login from "./pages/auth/Login";
 import Register from "./pages/auth/Register";
+import StaffRegister from "./pages/auth/StaffRegister";
+import AdminDashboard from "./pages/admin/AdminDashboard";
+import { AdminProvider } from "./context/AdminContext";
+import { DoctorProvider } from "./context/doctor/DoctorContext";
+import { PatientProvider } from "./context/patient/PatientContext";
+import { ReceptionistProvider } from "./context/receptionist/ReceptionistContext";
+import BookingPage from "./components/landing/BookingPage";
+import DoctorDashboard from "./pages/doctor/DoctorDashboard";
+import ReceptionistDashboard from "./pages/receptionist/ReceptionistDashboard";
+import PatientDashboard from "./pages/patient/PatientDashboard";
+
+// Public Pages
+import ServicesPage from "./pages/public/Services";
+import DepartmentsPage from "./pages/public/Departments";
+import AboutPage from "./pages/public/About";
+import ContactPage from "./pages/public/Contact";
+
+// Admin sub-views
+import Overview from "./pages/admin/Overview";
+import Appointments from "./pages/admin/Appointments";
+import Departments from "./pages/admin/Departments";
+import Doctors from "./pages/admin/Doctors";
+import Receptionists from "./pages/admin/Receptionists";
+import Patients from "./pages/admin/Patients";
+
+// Doctor sub-views
+import DoctorOverview from "./pages/doctor/DoctorOverview";
+import DoctorAppointments from "./pages/doctor/DoctorAppointments";
+import DoctorSchedule from "./pages/doctor/DoctorSchedule";
+import DoctorProfile from "./pages/doctor/DoctorProfile";
+
+// Patient sub-views
+import PatientOverview from "./pages/patient/PatientOverview";
+import PatientBookAppointment from "./pages/patient/PatientBookAppointment";
+import PatientProfile from "./pages/patient/PatientProfile";
+
+// Receptionist sub-views
+import ReceptionistOverview from "./pages/receptionist/ReceptionistOverview";
+import ReceptionistAppointments from "./pages/receptionist/ReceptionistAppointments";
+import ReceptionistPatients from "./pages/receptionist/ReceptionistPatients";
+import ReceptionistProfile from "./pages/receptionist/ReceptionistProfile";
 
 function App() {
   return (
-    <>
+    <AdminProvider>
       <Routes>
         <Route path="/" element={<LandingPage />} />
+        <Route path="/services" element={<ServicesPage />} />
+        <Route path="/departments" element={<DepartmentsPage />} />
+        <Route path="/about" element={<AboutPage />} />
+        <Route path="/contact" element={<ContactPage />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
+        <Route path="/register/staff" element={<StaffRegister />} />
+        {/* Admin sub-views */}
+        <Route
+          path="/admin"
+          element={
+            <ProtectedRoute allowedRoles={["admin"]}>
+              <AdminDashboard />
+            </ProtectedRoute>
+          }
+        >
+          <Route index element={<Navigate to="overview" replace />} />
+          <Route path="overview" element={<Overview />} />
+          <Route path="appointments" element={<Appointments />} />
+          <Route path="departments" element={<Departments />} />
+          <Route path="doctors" element={<Doctors />} />
+          <Route path="receptionists" element={<Receptionists />} />
+          <Route path="patients" element={<Patients />} />
+        </Route>
+        <Route path="/user/appointment" element={<BookingPage />} />
+        {/* Doctor sub-views — wrapped in DoctorProvider for real backend data */}
+        <Route
+          path="/doctor"
+          element={
+            <ProtectedRoute allowedRoles={["doctor"]}>
+              <DoctorProvider>
+                <DoctorDashboard />
+              </DoctorProvider>
+            </ProtectedRoute>
+          }
+        >
+          <Route index element={<Navigate to="overview" replace />} />
+          <Route path="overview" element={<DoctorOverview />} />
+          <Route path="appointments" element={<DoctorAppointments />} />
+          <Route path="schedule" element={<DoctorSchedule />} />
+          <Route path="profile" element={<DoctorProfile />} />
+        </Route>
+
+        {/* Receptionist sub-views — wrapped in ReceptionistProvider */}
+        <Route
+          path="receptionist/*"
+          element={
+            <ProtectedRoute allowedRoles={["receptionist"]}>
+              <ReceptionistProvider>
+                <ReceptionistDashboard />
+              </ReceptionistProvider>
+            </ProtectedRoute>
+          }
+        >
+          <Route index element={<Navigate to="overview" replace />} />
+          <Route path="overview" element={<ReceptionistOverview />} />
+          <Route path="appointments" element={<ReceptionistAppointments />} />
+          <Route path="patients" element={<ReceptionistPatients />} />
+          <Route path="profile" element={<ReceptionistProfile />} />
+        </Route>
+        {/* Patient sub-views — wrapped in PatientProvider */}
+        <Route
+          path="/patient"
+          element={
+            <ProtectedRoute allowedRoles={["patient"]}>
+              <PatientProvider>
+                <PatientDashboard />
+              </PatientProvider>
+            </ProtectedRoute>
+          }
+        >
+          <Route index element={<Navigate to="overview" replace />} />
+          <Route path="overview" element={<PatientOverview />} />
+          <Route path="book" element={<PatientBookAppointment />} />
+          <Route path="profile" element={<PatientProfile />} />
+        </Route>
       </Routes>
-    </>
+    </AdminProvider>
   );
 }
 

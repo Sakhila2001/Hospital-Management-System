@@ -20,7 +20,7 @@ const Doctor = sequelize.define(
     },
     departmentId: {
       type: DataTypes.INTEGER,
-      allowNull: false,
+      allowNull: true,
       references: {
         model: "departments",
         key: "id",
@@ -28,7 +28,7 @@ const Doctor = sequelize.define(
     },
     specialization: {
       type: DataTypes.STRING,
-      allowNull: false,
+      allowNull: true,
     },
     qualification: {
       type: DataTypes.STRING,

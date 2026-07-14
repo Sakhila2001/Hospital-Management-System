@@ -5,6 +5,11 @@ import {
   getAppointmentById,
   updateAppointmentStatus,
   deleteAppointment,
+  assignDoctorAndDepartment,
+  createRescheduleRequest,
+  acceptRescheduleRequest,
+  rejectRescheduleRequest,
+  createPublicAppointment,
 } from "./appointment.controller.js";
 import {
   authMiddleware,
@@ -12,6 +17,8 @@ import {
 } from "../../middlewares/auth.middleware.js";
 
 const appointmentRouter = express.Router();
+
+appointmentRouter.post("/public", createPublicAppointment);
 
 appointmentRouter.use(authMiddleware);
 
@@ -23,10 +30,34 @@ appointmentRouter.post(
 appointmentRouter.get("/", getAllAppointments);
 appointmentRouter.get("/:id", getAppointmentById);
 appointmentRouter.patch(
+  "/:id/assign",
+  authorizeRoles("receptionist", "admin"),
+  assignDoctorAndDepartment,
+);
+appointmentRouter.patch(
   "/:id/status",
   authorizeRoles("patient", "receptionist", "doctor", "admin"),
   updateAppointmentStatus,
 );
-appointmentRouter.delete("/:id", authorizeRoles("admin"), deleteAppointment);
+appointmentRouter.post(
+  "/:id/reschedule-request",
+  authorizeRoles("receptionist", "admin"),
+  createRescheduleRequest,
+);
+appointmentRouter.post(
+  "/:id/reschedule-accept",
+  authorizeRoles("patient", "admin"),
+  acceptRescheduleRequest,
+);
+appointmentRouter.post(
+  "/:id/reschedule-reject",
+  authorizeRoles("patient", "receptionist", "admin"),
+  rejectRescheduleRequest,
+);
+appointmentRouter.delete(
+  "/:id",
+  authorizeRoles("admin"),
+  deleteAppointment
+);
 
 export default appointmentRouter;

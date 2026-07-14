@@ -4,6 +4,7 @@ import {
   deleteDoctorById,
   getAllDoctors,
   getDoctorByUserId,
+  toggleDoctorAvailability,
   updateDoctorProfile,
 } from "./doctor.controller.js";
 import {
@@ -19,11 +20,20 @@ doctorRouter.get(
   authorizeRoles("admin", "receptionist"),
   getAllDoctors,
 );
+
+// IMPORTANT: /me/profile and /admin MUST come before /:userId so Express
+// does not treat the literal string "me" or "admin" as a userId parameter.
 doctorRouter.get(
-  "/:userId",
+  "/me/profile",
   authMiddleware,
-  authorizeRoles("admin", "receptionist", "doctor"),
+  authorizeRoles("doctor"),
   getDoctorByUserId,
+);
+doctorRouter.put(
+  "/me/profile",
+  authMiddleware,
+  authorizeRoles("doctor"),
+  updateDoctorProfile,
 );
 doctorRouter.post(
   "/admin",
@@ -31,23 +41,24 @@ doctorRouter.post(
   authorizeRoles("admin"),
   adminCreateDoctor,
 );
+
 doctorRouter.get(
-  "/me/profile",
+  "/:userId",
   authMiddleware,
-  authorizeRoles("doctor"),
+  authorizeRoles("admin", "receptionist", "doctor"),
   getDoctorByUserId,
-);
-doctorRouter.put(
-  "/me/profile",
-  authMiddleware,
-  authorizeRoles("doctor"),
-  updateDoctorProfile,
 );
 doctorRouter.put(
   "/:userId",
   authMiddleware,
   authorizeRoles("admin", "doctor"),
   updateDoctorProfile,
+);
+doctorRouter.patch(
+  "/:userId/availability",
+  authMiddleware,
+  authorizeRoles("admin", "doctor"),
+  toggleDoctorAvailability,
 );
 doctorRouter.delete(
   "/:userId",
