@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import Logo from "../../assets/images/logo.png";
 import { EyeIcon, EyeSlashIcon } from "@heroicons/react/24/outline";
-import axios from "axios";
+import api from "../../api/axios";
 
 const ROLES = [
   { value: "doctor", label: "Doctor" },
@@ -41,18 +41,14 @@ export default function StaffRegister() {
       return;
     }
     try {
-      const res = await axios.post(
-        "http://localhost:5900/api/auth/register",
-        {
-          firstName: formData.firstName,
-          lastName: formData.lastName,
-          email: formData.email,
-          password: formData.password,
-          confirmPassword: formData.confirmPassword,
-          roles: formData.role, // this is the only real difference from patient Register — role comes from the dropdown instead of being hardcoded
-        },
-        { withCredentials: true },
-      );
+      const res = await api.post("/auth/register", {
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        email: formData.email,
+        password: formData.password,
+        confirmPassword: formData.confirmPassword,
+        roles: formData.role,
+      });
 
       setSuccess(res.data.message);
       setFormData({
