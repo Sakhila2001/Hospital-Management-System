@@ -11,7 +11,7 @@ import { AdminProvider } from "./context/AdminContext";
 import { DoctorProvider } from "./context/doctor/DoctorContext";
 import { PatientProvider } from "./context/patient/PatientContext";
 import { ReceptionistProvider } from "./context/receptionist/ReceptionistContext";
-import BookingWidget from "./components/landing/BookingWidget";
+import BookingPage from "./components/landing/BookingPage";
 import DoctorDashboard from "./pages/doctor/DoctorDashboard";
 import ReceptionistDashboard from "./pages/receptionist/ReceptionistDashboard";
 import PatientDashboard from "./pages/patient/PatientDashboard";
@@ -76,7 +76,7 @@ function App() {
           <Route path="receptionists" element={<Receptionists />} />
           <Route path="patients" element={<Patients />} />
         </Route>
-        <Route path="/user/appointment" element={<BookingWidget />} />
+        <Route path="/user/appointment" element={<BookingPage />} />
         {/* Doctor sub-views — wrapped in DoctorProvider for real backend data */}
         <Route
           path="/doctor"

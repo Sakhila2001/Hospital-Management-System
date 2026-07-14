@@ -1,3 +1,5 @@
+import bcrypt from "bcrypt";
+import crypto from "crypto";
 import Appointment from "./appointment.model.js";
 import Doctor from "../doctors/doctor.model.js";
 import Patient from "../patients/patient.model.js";
@@ -138,28 +140,108 @@ const validateDoctorFitsAppointment = async ({
   return doctor;
 };
 
-//  Create Appointment (patient self-book OR receptionist books for patient) ─
+//  Create Appointment (patient self-book OR receptionist books for patient OR public booking) ─
 // Patients: submit only appointmentDate, appointmentTime, appointmentReason.
 //           departmentId/doctorId are NOT accepted — a receptionist assigns
 //           these afterwards via assignDoctorAndDepartmentService.
 // Receptionists: must supply departmentId (routing decision); doctorId optional.
+// Public: no auth — system creates a patient user + profile, then books appointment.
 
 export const createAppointmentService = async (data, requester) => {
-  const { roles, id: requesterId } = requester; // id = userId from JWT
-
   const {
-    patientId, // required when receptionist books; ignored when patient books
+    patientId, // required when receptionist books; ignored when patient/public books
     doctorId,
     departmentId,
     appointmentDate,
     appointmentTime,
     appointmentReason,
+    type,
+    // Public booking fields
+    firstName,
+    lastName,
+    email,
+    phone,
+    gender,
+    dateOfBirth,
   } = data;
 
+  // Resilient field-name aliases
+  const finalAppointmentDate = appointmentDate || data.date;
+  const finalAppointmentTime = appointmentTime || data.time;
+  const finalAppointmentReason = appointmentReason || data.reason || "";
+  const finalType = type || data.type || data.appointmentType || "consultation";
+
   let resolvedPatientId;
+  let createdBy = null;
+
+  if (!requester) {
+    // Public booking — create patient user + profile on the fly
+    if (!firstName || !lastName || !email || !phone || !gender || !dateOfBirth) {
+      throw new Error(
+        "firstName, lastName, email, phone, gender, and dateOfBirth are required for public booking",
+      );
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      throw new Error("Invalid email format");
+    }
+
+    const existingUser = await User.findOne({
+      where: { email, deletedAt: null },
+    });
+    if (existingUser) {
+      throw new Error("Email already exists");
+    }
+
+    const randomPassword = crypto.randomBytes(16).toString("hex");
+    const hashedPassword = await bcrypt.hash(randomPassword, 10);
+
+    const result = await sequelize.transaction(async (t) => {
+      const user = await User.create(
+        {
+          firstName,
+          lastName,
+          email,
+          password: hashedPassword,
+          roles: "patient",
+        },
+        { transaction: t },
+      );
+
+      const patient = await Patient.create(
+        {
+          userId: user.id,
+          phone,
+          gender,
+          dateOfBirth,
+        },
+        { transaction: t },
+      );
+
+      const appointment = await Appointment.create(
+        {
+          patientId: patient.id,
+          doctorId: doctorId || null,
+          departmentId: departmentId || null,
+          type: finalType,
+          appointmentDate: finalAppointmentDate,
+          appointmentTime: finalAppointmentTime,
+          appointmentReason: finalAppointmentReason || null,
+          status: "pending",
+        },
+        { transaction: t },
+      );
+
+      return { appointment, user, patient };
+    });
+
+    return result;
+  }
+
+  const { roles, id: requesterId } = requester;
 
   if (roles === "patient") {
-    // patient can only book for themselves
     const patientRecord = await Patient.findOne({
       where: { userId: requesterId },
     });
@@ -170,7 +252,6 @@ export const createAppointmentService = async (data, requester) => {
     }
     resolvedPatientId = patientRecord.id;
 
-    // Patients cannot choose department or doctor — receptionist routes these later
     if (departmentId) {
       throw new Error(
         "Patients cannot select a department. Your appointment will be routed by our reception team.",
@@ -182,10 +263,8 @@ export const createAppointmentService = async (data, requester) => {
       );
     }
   } else if (roles === "receptionist") {
-    // receptionist must supply a patientId (userId of the patient)
     if (!patientId) throw new Error("patientId is required");
 
-    // patientId here is the userId, not the patients table id
     const patientRecord = await Patient.findOne({
       where: { userId: patientId },
     });
@@ -193,7 +272,6 @@ export const createAppointmentService = async (data, requester) => {
 
     resolvedPatientId = patientRecord.id;
 
-    // Receptionist is doing the routing, so departmentId is mandatory here
     if (!departmentId) {
       throw new Error("departmentId is required");
     }
@@ -201,15 +279,15 @@ export const createAppointmentService = async (data, requester) => {
     throw new Error("Only patients and receptionists can create appointments");
   }
 
-  //  Required field check ─
-  if (!appointmentDate || !appointmentTime) {
+  if (!finalAppointmentDate || !finalAppointmentTime) {
     throw new Error("appointmentDate and appointmentTime are required");
   }
 
-  //  Field validation ─
-  validateAppointmentFields({ appointmentDate, appointmentTime });
+  validateAppointmentFields({
+    appointmentDate: finalAppointmentDate,
+    appointmentTime: finalAppointmentTime,
+  });
 
-  //  Department is active (only relevant when receptionist supplied one)
   if (departmentId) {
     const department = await Department.findOne({
       where: { id: departmentId },
@@ -219,18 +297,14 @@ export const createAppointmentService = async (data, requester) => {
   }
 
   if (doctorId) {
-    // roles === "receptionist" only reaches here, since patient path already
-    // threw above if doctorId was supplied
     await validateDoctorFitsAppointment({
       doctorId,
       departmentId,
-      appointmentDate,
-      appointmentTime,
+      appointmentDate: finalAppointmentDate,
+      appointmentTime: finalAppointmentTime,
     });
   }
 
-  //  Resolve receptionist id (createdBy)
-  let createdBy = null;
   if (roles === "receptionist") {
     const receptionistRecord = await Receptionist.findOne({
       where: { userId: requesterId },
@@ -239,16 +313,16 @@ export const createAppointmentService = async (data, requester) => {
     createdBy = receptionistRecord.id;
   }
 
-  //  Create
   const appointment = await sequelize.transaction(async (t) => {
     return Appointment.create(
       {
         patientId: resolvedPatientId,
         doctorId: doctorId || null,
         departmentId: departmentId || null,
-        appointmentDate,
-        appointmentTime,
-        appointmentReason: appointmentReason || null,
+        type: finalType,
+        appointmentDate: finalAppointmentDate,
+        appointmentTime: finalAppointmentTime,
+        appointmentReason: finalAppointmentReason || null,
         createdBy,
         status: "pending",
       },
@@ -257,6 +331,12 @@ export const createAppointmentService = async (data, requester) => {
   });
 
   return { appointment };
+};
+
+//  Public appointment booking (no auth required) ─
+
+export const createPublicAppointmentService = async (data) => {
+  return createAppointmentService(data, null);
 };
 
 //  Get all appointments (admin sees all; doctor/receptionist sees own; patient sees own) ─

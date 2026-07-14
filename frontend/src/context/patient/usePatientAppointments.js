@@ -41,7 +41,7 @@ export default function usePatientAppointments({ user, authLoading }) {
       const res = await api.post("/appointments", {
         appointmentDate: date,
         appointmentTime: time,
-        appointmentType: type,
+        type,
         appointmentReason,
       });
       const normalized = normalizeAppointment(res.data.data.appointment);

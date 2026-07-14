@@ -9,6 +9,7 @@ import {
   createRescheduleRequest,
   acceptRescheduleRequest,
   rejectRescheduleRequest,
+  createPublicAppointment,
 } from "./appointment.controller.js";
 import {
   authMiddleware,
@@ -16,6 +17,8 @@ import {
 } from "../../middlewares/auth.middleware.js";
 
 const appointmentRouter = express.Router();
+
+appointmentRouter.post("/public", createPublicAppointment);
 
 appointmentRouter.use(authMiddleware);
 

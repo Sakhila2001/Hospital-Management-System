@@ -8,6 +8,7 @@ import {
   createRescheduleRequestService,
   acceptRescheduleRequestService,
   rejectRescheduleRequestService,
+  createPublicAppointmentService,
 } from "./appointment.service.js";
 
 export const createAppointment = async (req, res) => {
@@ -25,6 +26,25 @@ export const createAppointment = async (req, res) => {
         ? 403
         : error.message === "Access denied"
           ? 403
+          : 400;
+    return res.status(status).json({ success: false, message: error.message });
+  }
+};
+
+export const createPublicAppointment = async (req, res) => {
+  try {
+    const result = await createPublicAppointmentService(req.body);
+    return res.status(201).json({
+      success: true,
+      message: "Appointment created successfully",
+      data: result,
+    });
+  } catch (error) {
+    const status =
+      error.message === "Email already exists"
+        ? 409
+        : error.message === "Patient profile not found"
+          ? 400
           : 400;
     return res.status(status).json({ success: false, message: error.message });
   }
