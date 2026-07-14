@@ -5,6 +5,7 @@
   "main": "index.js",
   "scripts": {
     "dev": "nodemon app.js",
+    "start": "node app.js",
     "migrate": "sequelize-cli db:migrate --config config/database.cjs --migrations-path migrations",
     "migrate:undo": "sequelize-cli db:migrate:undo --config config/database.cjs --migrations-path migrations",
     "migration:generate": "sequelize-cli migration:generate --migrations-path migrations"
