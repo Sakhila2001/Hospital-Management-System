@@ -1,12 +1,15 @@
 import axios from "axios";
 
+const API_BASE =
+  import.meta.env.VITE_API_URL || "http://localhost:5900/api";
+
 const api = axios.create({
-  baseURL: "http://localhost:5900/api",
-  withCredentials: true, // sends the httpOnly refreshToken cookie automatically
+  baseURL: API_BASE,
+  withCredentials: true,
 });
 
 let accessToken = null;
-let onLogout = null; // set by AuthContext so this file can trigger a logout when refresh fails
+let onLogout = null;
 
 export const setAccessToken = (token) => {
   accessToken = token;
@@ -29,20 +32,20 @@ api.interceptors.response.use(
     const originalRequest = error.config;
 
     if (error.response?.status === 401 && !originalRequest._retry) {
-      originalRequest._retry = true; // prevent infinite retry loop
+      originalRequest._retry = true;
       try {
         const res = await axios.post(
-          "http://localhost:5900/api/auth/refresh-token",
+          `${API_BASE}/auth/refresh-token`,
           {},
           { withCredentials: true }
         );
         const newAccessToken = res.data.data.accessToken;
         setAccessToken(newAccessToken);
         originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
-        return api(originalRequest); // retry the original failed request
+        return api(originalRequest);
       } catch (refreshError) {
         setAccessToken(null);
-        if (onLogout) onLogout(); // refresh token itself expired — force logout
+        if (onLogout) onLogout();
         return Promise.reject(refreshError);
       }
     }

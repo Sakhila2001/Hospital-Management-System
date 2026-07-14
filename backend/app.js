@@ -13,9 +13,22 @@ import userRouter from "./features/users/user.routes.js";
 import appointmentRouter from "./features/appointments/appointment.route.js";
 
 const app = express();
+const allowedOrigins = [
+  "http://localhost:5173",
+  "https://hms.vercel.app",
+];
+
+const corsOrigin = (origin, callback) => {
+  if (!origin || allowedOrigins.includes(origin)) {
+    callback(null, true);
+  } else {
+    callback(new Error("Not allowed by CORS"));
+  }
+};
+
 app.use(
   cors({
-    origin: "http://localhost:5173",
+    origin: corsOrigin,
     credentials: true,
   }),
 );
