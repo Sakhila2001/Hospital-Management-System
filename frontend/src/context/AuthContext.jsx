@@ -7,7 +7,7 @@ const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true); // true while we check for an existing session on app load
+  const [loading, setLoading] = useState(true);
 
   const logout = () => {
     setUser(null);
@@ -17,11 +17,10 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     setLogoutHandler(logout);
 
-    // On app load / refresh, try to silently restore the session using the refreshToken cookie
     const tryRestoreSession = async () => {
       try {
         const res = await axios.post(
-          "http://localhost:5900/api/auth/refresh-token",
+          `${import.meta.env.VITE_API_URL || "http://localhost:5900/api"}/auth/refresh-token`,
           {},
           { withCredentials: true },
         );
@@ -31,7 +30,6 @@ export function AuthProvider({ children }) {
         const meRes = await api.get("/auth/me");
         setUser(meRes.data.data.user);
       } catch {
-        // no valid refresh token cookie — user just isn't logged in
       } finally {
         setLoading(false);
       }
