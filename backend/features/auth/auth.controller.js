@@ -26,10 +26,13 @@ export const loginUser = async (req, res) => {
   try {
     const { user, accessToken, refreshToken } = await loginService(req.body);
 
+    const isProduction = process.env.NODE_ENV === "production";
+
     res.cookie("refreshToken", refreshToken, {
       httpOnly: true,
-      sameSite: "strict",
-      maxAge: 1000 * 60 * 60 * 24 * 7, // 7 days
+      sameSite: isProduction ? "none" : "strict",
+      secure: isProduction,
+      maxAge: 1000 * 60 * 60 * 24 * 7,
     });
 
     return res.status(200).json({
@@ -47,12 +50,14 @@ export const loginUser = async (req, res) => {
 
 export const logoutUser = async (req, res) => {
   try {
-    // req.user.id comes from auth middleware
     await logoutService(req.user.id);
+
+    const isProduction = process.env.NODE_ENV === "production";
 
     res.clearCookie("refreshToken", {
       httpOnly: true,
-      sameSite: "strict",
+      sameSite: isProduction ? "none" : "strict",
+      secure: isProduction,
     });
 
     return res.status(200).json({
